@@ -1,8 +1,29 @@
 generator client {
   provider = "prisma-client-js"
+  output = "../src/types/prisma-client"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   Int       @id @default(autoincrement())
+  name                 String
+  email                String
+  password             String
+  role                 Role      @default(USER)
+  passwordChangedAt    DateTime?
+  passwordResetToken   String?
+  passwordResetExpires DateTime?
+  active               Boolean   @default(true)
+  avatar               String    @default("https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png")
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @default(now())
+}
+
+enum Role {
+  USER
+  ADMIN
 }

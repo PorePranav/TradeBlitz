@@ -5,10 +5,14 @@ import morgan from 'morgan';
 import AppError from './utils/AppError';
 import globalErrorHandler from './controllers/errorController';
 
+import authRouter from './routers/authRoutes';
+
 const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
+
+app.use('/api/v1/auth', authRouter);
 
 app.all('*', (req: Request, res: Response, next: NextFunction) => {
   return next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
