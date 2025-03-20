@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
-import jwt, { sign } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
+import 'shared-types';
 
 import AppError from '../utils/AppError';
 import catchAsync from '../utils/catchAsync';
@@ -68,3 +69,52 @@ export const signupController = catchAsync(
     createSendToken(newUser, 201, res);
   }
 );
+
+export const loginController = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const zodResult = loginSchema.safeParse(req.body);
+
+    if (!zodResult.success) {
+      const errors = zodResult.error.errors.map((error) => error.message);
+      return next(new AppError(errors.join(', '), 400));
+    }
+
+    const { email, password } = zodResult.data;
+
+    const user = await prisma.user.findFirst({
+      where: { email },
+    });
+
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return next(new AppError('Incorrect email or password', 401));
+    }
+
+    createSendToken(user, 200, res);
+  }
+);
+
+export const protect = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+  const token = req.cookies.jwt;
+  if (!token || token == null)
+    return next(new AppError('You are not logged in. Please log in to get access', 401));
+
+  const decoded = (await jwt.verify(token, process.env.JWT_SECRET!)) as jwtPayload;
+
+  const fetchedUser = await prisma.user.findUnique({ where: { id: decoded.userId } });
+
+  if (!fetchedUser)
+    return next(new AppError('The user belonging to this token does no longer exist.', 401));
+
+  req.user = fetchedUser as User;
+  next();
+});
+
+export const restrictTo = (...roles: string[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!roles.includes((req.user as User).role)) {
+      return next(new AppError('You do not have permission to perform this action', 403));
+    }
+
+    next();
+  };
+};
