@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import jwt, { JwtPayload } from 'jsonwebtoken';
 import 'shared-types';
+import crypto from 'crypto';
 
 import AppError from '../utils/AppError';
 import catchAsync from '../utils/catchAsync';
@@ -10,10 +11,11 @@ import prisma from '../utils/prisma';
 import { Role, User } from '../types/prisma-client';
 import { loginSchema, signupSchema } from '../validators/authValidations';
 
-type jwtPayload = {
+interface jwtPayload extends JwtPayload {
   userId: number;
   role: string;
-};
+  iat: number;
+}
 
 const signToken = (userId: number, role: string) => {
   return jwt.sign({ userId, role }, process.env.JWT_SECRET!, {
@@ -92,6 +94,95 @@ export const loginController = catchAsync(
     createSendToken(user, 200, res);
   }
 );
+
+export const isLoggedIn = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+  if (req.cookies.jwt) {
+    const decoded = (await jwt.verify(req.cookies.jwt, process.env.JWT_SECRET!)) as jwtPayload;
+
+    const fetchedUser = await prisma.user.findUnique({
+      where: {
+        id: (decoded as jwtPayload).userId,
+      },
+    });
+
+    if (!fetchedUser || fetchedUser.passwordChangedAt >= new Date(decoded.iat * 1000))
+      return next();
+  }
+
+  next();
+});
+
+export const resetPassword = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+  const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+
+  const fetchedUser = await prisma.user.findFirst({
+    where: {
+      passwordResetToken: hashedToken,
+      passwordResetExpires: { gt: new Date() },
+    },
+  });
+
+  if (!fetchedUser) return next(new AppError('Token is invalid or has expired', 400));
+
+  if (req.body.password !== req.body.confirmPassword)
+    return next(new AppError('Passwords do not match', 400));
+
+  await prisma.user.update({
+    where: { id: fetchedUser.id },
+    data: {
+      password: req.body.password,
+      passwordResetToken: null,
+      passwordResetExpires: null,
+    },
+  });
+
+  createSendToken(fetchedUser, 200, res);
+});
+
+export const updatePassword = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const fetchedUser = await prisma.user.findUnique({
+      where: { id: (req.user as User).id },
+    });
+
+    if (!(await bcrypt.compare(req.body.currentPassword, fetchedUser!.password))) {
+      return next(new AppError('Your current password is wrong', 401));
+    }
+
+    await prisma.user.update({
+      where: { id: fetchedUser!.id },
+      data: {
+        password: await bcrypt.hash(req.body.newPassword, 12),
+      },
+    });
+
+    createSendToken(fetchedUser!, 200, res);
+  }
+);
+
+export const oAuth = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+  const user = await prisma.user.findFirst({
+    where: { email: req.body.email },
+  });
+
+  if (user) {
+    createSendToken(user, 200, res);
+  } else {
+    const generatedPassword = Math.random().toString(36).slice(-8);
+
+    const newUser = await prisma.user.create({
+      data: {
+        name: req.body.name,
+        email: req.body.email,
+        password: await bcrypt.hash(generatedPassword, 12),
+        avatar: req.body.photo,
+        role: 'USER',
+      },
+    });
+
+    createSendToken(newUser, 201, res);
+  }
+});
 
 export const protect = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const token = req.cookies.jwt;
