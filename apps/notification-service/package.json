@@ -1,0 +1,22 @@
+{
+  "name": "notification-service",
+  "version": "1.0.0",
+  "description": "",
+  "license": "MIT",
+  "author": "Pranav Pore",
+  "type": "commonjs",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "dev:prod": "SET NODE_ENV=production & ts-node-dev --respawn --transpile-only src/server.ts"
+  },
+  "devDependencies": {
+    "@types/mailgen": "^2.0.7",
+    "@types/nodemailer": "^6.4.17"
+  },
+  "dependencies": {
+    "mailgen": "^2.0.29",
+    "nodemailer": "^6.10.0"
+  }
+}

@@ -11,13 +11,15 @@ datasource db {
 model User {
   id                   Int       @id @default(autoincrement())
   name                 String
-  email                String
+  email                String    @unique
   password             String
   role                 Role      @default(USER)
   passwordChangedAt    DateTime  @default(now())
   passwordResetToken   String?
   passwordResetExpires DateTime?
   active               Boolean   @default(true)
+  verified             Boolean   @default(false)
+  verificationToken    String?
   avatar               String    @default("https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png")
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @default(now())

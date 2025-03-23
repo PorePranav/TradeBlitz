@@ -1,8 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt, { JwtPayload } from 'jsonwebtoken';
-import 'shared-types';
 import crypto from 'crypto';
+
+import 'shared-types';
+import { RabbitMQClient, ExchangeType } from 'rabbitmq';
 
 import AppError from '../utils/AppError';
 import catchAsync from '../utils/catchAsync';
@@ -10,6 +12,9 @@ import prisma from '../utils/prisma';
 
 import { Role, User } from '../types/prisma-client';
 import { loginSchema, signupSchema } from '../validators/authValidations';
+
+const rabbitClient = new RabbitMQClient({ url: process.env.RABBITMQ_URL! });
+const producer = rabbitClient.getProducer();
 
 interface jwtPayload extends JwtPayload {
   userId: number;
@@ -33,7 +38,7 @@ const createSendToken = (user: User, statusCode: number, res: Response) => {
     secure: process.env.NODE_ENV === 'production',
   };
 
-  const { password, ...data } = user;
+  const { password, verificationToken, ...data } = user;
 
   res.cookie('jwt', token, cookieOptions).status(statusCode).json({
     status: 'success',
@@ -57,6 +62,11 @@ export const signupController = catchAsync(
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationTokenHash = crypto
+      .createHash('sha256')
+      .update(verificationToken)
+      .digest('hex');
 
     const newUser = await prisma.user.create({
       data: {
@@ -64,11 +74,20 @@ export const signupController = catchAsync(
         email,
         password: hashedPassword,
         role: role as Role,
+        verified: false,
+        verificationToken: verificationTokenHash,
         avatar,
       },
     });
 
-    createSendToken(newUser, 201, res);
+    await producer.publish(
+      { name: newUser.name, email: newUser.email, verificationToken },
+      { exchangeName: 'auth.signup.fanout', exchangeType: ExchangeType.FANOUT }
+    );
+
+    res.status(201).json({
+      status: 'success',
+    });
   }
 );
 
@@ -112,8 +131,50 @@ export const isLoggedIn = catchAsync(async (req: Request, res: Response, next: N
   next();
 });
 
+export const forgotPassword = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (!req.body.email) {
+      return next(new AppError('Please provide your email address', 400));
+    }
+
+    const fetchedUser = await prisma.user.findFirst({
+      where: { email: req.body.email },
+    });
+
+    if (!fetchedUser) {
+      return next(new AppError('There is no user with that email address', 404));
+    }
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+    await prisma.user.update({
+      where: { id: fetchedUser.id },
+      data: {
+        passwordResetToken: resetTokenHash,
+        passwordResetExpires: new Date(Date.now() + 10 * 60 * 1000),
+      },
+    });
+
+    await producer.sendToQueue('auth.forgot-password', {
+      name: fetchedUser.name,
+      email: fetchedUser.email,
+      resetToken,
+    });
+
+    res.status(200).json({
+      status: 'success',
+    });
+  }
+);
+
 export const resetPassword = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+  if (!req.query.token) return next(new AppError('Token is required', 400));
+
+  const hashedToken = crypto
+    .createHash('sha256')
+    .update(req.query.token as string)
+    .digest('hex');
 
   const fetchedUser = await prisma.user.findFirst({
     where: {
@@ -134,6 +195,28 @@ export const resetPassword = catchAsync(async (req: Request, res: Response, next
       passwordResetToken: null,
       passwordResetExpires: null,
     },
+  });
+
+  createSendToken(fetchedUser, 200, res);
+});
+
+export const verifyUser = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+  if (!req.query.token) return next(new AppError('Token is required', 400));
+
+  const hashedToken = crypto
+    .createHash('sha256')
+    .update(req.query.token as string)
+    .digest('hex');
+
+  const fetchedUser = await prisma.user.findFirst({
+    where: { verificationToken: hashedToken },
+  });
+
+  if (!fetchedUser) return next(new AppError('Token is invalid or expired', 400));
+
+  await prisma.user.update({
+    where: { id: fetchedUser.id },
+    data: { verified: true, verificationToken: null },
   });
 
   createSendToken(fetchedUser, 200, res);
@@ -196,6 +279,10 @@ export const protect = catchAsync(async (req: Request, res: Response, next: Next
   if (!fetchedUser)
     return next(new AppError('The user belonging to this token does no longer exist.', 401));
 
+  if (!fetchedUser.verified)
+    return next(
+      new AppError('Account is not verified, please check your email to verify the account.', 400)
+    );
   req.user = fetchedUser as User;
   next();
 });
