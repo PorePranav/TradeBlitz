@@ -8,6 +8,8 @@ import {
   protect,
   updatePassword,
   verifyUser,
+  createAdminUser,
+  logout,
 } from '../controllers/authController';
 
 const router = Router();
@@ -18,6 +20,8 @@ router.post('/login', loginController);
 router.post('/forgotPassword', forgotPassword);
 router.patch('/resetPassword', resetPassword);
 router.patch('/verifyUser', verifyUser);
+router.post('/signupAdmin', createAdminUser);
+router.get('/logout', logout);
 
 router.use(protect);
 router.patch('/changePassword', updatePassword);

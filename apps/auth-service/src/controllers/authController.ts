@@ -55,7 +55,7 @@ export const signupController = catchAsync(
       return next(new AppError(errors.join(', '), 400));
     }
 
-    const { name, email, password, confirmPassword, role, avatar } = zodResult.data;
+    const { name, email, password, confirmPassword, avatar } = zodResult.data;
 
     if (password !== confirmPassword) {
       return next(new AppError('Passwords do not match', 400));
@@ -73,7 +73,7 @@ export const signupController = catchAsync(
         name,
         email,
         password: hashedPassword,
-        role: role as Role,
+        role: 'USER',
         verified: false,
         verificationToken: verificationTokenHash,
         avatar,
@@ -188,16 +188,18 @@ export const resetPassword = catchAsync(async (req: Request, res: Response, next
   if (req.body.password !== req.body.confirmPassword)
     return next(new AppError('Passwords do not match', 400));
 
-  await prisma.user.update({
+  const hashedPassword = await bcrypt.hash(req.body.password, 12);
+
+  const updatedUser = await prisma.user.update({
     where: { id: fetchedUser.id },
     data: {
-      password: req.body.password,
+      password: hashedPassword,
       passwordResetToken: null,
       passwordResetExpires: null,
     },
   });
 
-  createSendToken(fetchedUser, 200, res);
+  createSendToken(updatedUser, 200, res);
 });
 
 export const verifyUser = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -214,12 +216,12 @@ export const verifyUser = catchAsync(async (req: Request, res: Response, next: N
 
   if (!fetchedUser) return next(new AppError('Token is invalid or expired', 400));
 
-  await prisma.user.update({
+  const updatedUser = await prisma.user.update({
     where: { id: fetchedUser.id },
     data: { verified: true, verificationToken: null },
   });
 
-  createSendToken(fetchedUser, 200, res);
+  createSendToken(updatedUser, 200, res);
 });
 
 export const updatePassword = catchAsync(
@@ -232,14 +234,14 @@ export const updatePassword = catchAsync(
       return next(new AppError('Your current password is wrong', 401));
     }
 
-    await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { id: fetchedUser!.id },
       data: {
         password: await bcrypt.hash(req.body.newPassword, 12),
       },
     });
 
-    createSendToken(fetchedUser!, 200, res);
+    createSendToken(updatedUser, 200, res);
   }
 );
 
@@ -267,13 +269,58 @@ export const oAuth = catchAsync(async (req: Request, res: Response, next: NextFu
   }
 });
 
+export const createAdminUser = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token || token !== process.env.ADMIN_API_KEY)
+      return next(new AppError('You are not authorized to perform this action', 403));
+
+    const zodResult = signupSchema.safeParse(req.body);
+
+    if (!zodResult.success) {
+      const errors = zodResult.error.errors.map((error) => error.message);
+      return next(new AppError(errors.join(', '), 400));
+    }
+
+    const { name, email, password, confirmPassword, avatar } = zodResult.data;
+
+    if (password !== confirmPassword) return next(new AppError('Passwords do not match', 400));
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    const newUser = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        role: 'ADMIN',
+        verified: true,
+        avatar,
+      },
+    });
+
+    const { password: newUserPassword, ...data } = newUser;
+
+    res.status(201).json({
+      status: 'success',
+      data,
+    });
+  }
+);
+
+export const logout = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+  res.clearCookie('jwt').status(200).json({
+    status: 'success',
+  });
+});
+
 export const protect = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const token = req.cookies.jwt;
+  const token = req.cookies?.jwt;
+
   if (!token || token == null)
     return next(new AppError('You are not logged in. Please log in to get access', 401));
 
   const decoded = (await jwt.verify(token, process.env.JWT_SECRET!)) as jwtPayload;
-
   const fetchedUser = await prisma.user.findUnique({ where: { id: decoded.userId } });
 
   if (!fetchedUser)
@@ -283,6 +330,7 @@ export const protect = catchAsync(async (req: Request, res: Response, next: Next
     return next(
       new AppError('Account is not verified, please check your email to verify the account.', 400)
     );
+
   req.user = fetchedUser as User;
   next();
 });

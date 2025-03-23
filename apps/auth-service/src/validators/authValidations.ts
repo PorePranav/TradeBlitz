@@ -1,7 +1,5 @@
 import z from 'zod';
 
-import { Role } from '../types/prisma-client';
-
 export const signupSchema = z.object({
   name: z
     .string()
@@ -14,7 +12,6 @@ export const signupSchema = z.object({
     .min(8, 'Password must be at least 8 characters long')
     .max(50, 'Password can have at most 50 characters'),
   confirmPassword: z.string(),
-  role: z.enum(Object.values(Role) as [string, ...string[]]).default(Role.USER),
   avatar: z.string().optional(),
 });
 
