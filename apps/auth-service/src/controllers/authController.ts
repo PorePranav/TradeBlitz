@@ -10,7 +10,7 @@ import AppError from '../utils/AppError';
 import catchAsync from '../utils/catchAsync';
 import prisma from '../utils/prisma';
 
-import { Role, User } from '../types/prisma-client';
+import { User } from '../types/prisma-client';
 import { loginSchema, signupSchema } from '../validators/authValidations';
 
 const rabbitClient = new RabbitMQClient({ url: process.env.RABBITMQ_URL! });
@@ -226,6 +226,14 @@ export const verifyUser = catchAsync(async (req: Request, res: Response, next: N
 
 export const updatePassword = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
+    if (!req.body.currentPassword || !req.body.newPassword || !req.body.confirmPassword) {
+      return next(new AppError('Please provide your current password and new password', 400));
+    }
+
+    if (req.body.newPassword !== req.body.confirmPassword) {
+      return next(new AppError('Passwords do not match', 400));
+    }
+
     const fetchedUser = await prisma.user.findUnique({
       where: { id: (req.user as User).id },
     });
@@ -262,6 +270,7 @@ export const oAuth = catchAsync(async (req: Request, res: Response, next: NextFu
         password: await bcrypt.hash(generatedPassword, 12),
         avatar: req.body.photo,
         role: 'USER',
+        verified: true,
       },
     });
 

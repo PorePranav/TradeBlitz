@@ -17,7 +17,7 @@ export const updateMe = catchAsync(async (req: Request, res: Response, next: Nex
   if (req.body.password)
     next(new AppError(`Can't update password using this route. Please use /updatePassword`, 400));
 
-  const filteredBody = filterObj(req.body, 'name', 'email', 'avatar');
+  const filteredBody = filterObj(req.body, 'name', 'avatar');
 
   const zodResult = updateMeSchema.safeParse(filteredBody);
 
@@ -31,9 +31,11 @@ export const updateMe = catchAsync(async (req: Request, res: Response, next: Nex
     data: filteredBody,
   });
 
+  const { password, ...user } = updatedUser;
+
   res.status(200).json({
     status: 'success',
-    data: updatedUser,
+    data: user,
   });
 });
 
@@ -43,7 +45,7 @@ export const deleteMe = catchAsync(async (req: Request, res: Response, next: Nex
     data: { active: false },
   });
 
-  res.status(204).json({
+  res.clearCookie('jwt').status(204).json({
     status: 'success',
     data: null,
   });
@@ -53,8 +55,12 @@ export const getMe = catchAsync(async (req: Request, res: Response, next: NextFu
   if (!req.user) return next(new AppError('You are not logged in', 401));
   const me = await prisma.user.findUnique({ where: { id: req.user.id } });
 
+  if (!me) return next(new AppError('User not found', 404));
+
+  const { password, ...user } = me;
+
   res.status(200).json({
     status: 'success',
-    data: me,
+    data: user,
   });
 });

@@ -14,14 +14,16 @@ import {
 
 const router = Router();
 
-router.post('/oauth', oAuth);
 router.post('/signup', signupController);
 router.post('/login', loginController);
+router.post('/oauth', oAuth);
+router.get('/logout', logout);
+router.post('/signupAdmin', createAdminUser);
+
 router.post('/forgotPassword', forgotPassword);
 router.patch('/resetPassword', resetPassword);
+
 router.patch('/verifyUser', verifyUser);
-router.post('/signupAdmin', createAdminUser);
-router.get('/logout', logout);
 
 router.use(protect);
 router.patch('/changePassword', updatePassword);
