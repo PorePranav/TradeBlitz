@@ -4,7 +4,7 @@ import morgan from 'morgan';
 
 import { authConsumer } from './consumers/authConsumer';
 import AppError from './utils/AppError';
-import globalErrorHandler from './controllers/errorController';
+import { globalErrorHandler } from '@tradeblitz/common-utils';
 
 authConsumer();
 

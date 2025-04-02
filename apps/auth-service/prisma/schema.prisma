@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client-js"
-  output = "../src/types/prisma-client"
+  output   = "../src/types/prisma-client"
 }
 
 datasource db {
@@ -21,6 +21,7 @@ model User {
   verified             Boolean   @default(false)
   verificationToken    String?
   avatar               String    @default("https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png")
+  kycStatus            KYCStatus @default(PENDING)
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @default(now())
 }
@@ -28,4 +29,11 @@ model User {
 enum Role {
   USER
   ADMIN
+}
+
+enum KYCStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  NA
 }

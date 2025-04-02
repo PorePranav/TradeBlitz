@@ -1,12 +1,11 @@
 {
-  "name": "@tradeblitz/shared-types",
+  "name": "@tradeblitz/common-utils",
   "version": "1.0.0",
   "description": "",
   "license": "MIT",
   "author": "Pranav Pore",
   "type": "commonjs",
   "main": "dist/index.js",
-  "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc"
   }

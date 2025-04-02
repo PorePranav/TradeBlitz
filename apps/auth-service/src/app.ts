@@ -3,8 +3,8 @@ import express, { Request, Response, NextFunction } from 'express';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 
-import AppError from './utils/AppError';
-import globalErrorHandler from './controllers/errorController';
+import { AppError, globalErrorHandler } from 'common-utils';
+
 
 import authRouter from './routers/authRoutes';
 import userRouter from './routers/userRoutes';

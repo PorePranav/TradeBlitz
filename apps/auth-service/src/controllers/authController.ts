@@ -6,8 +6,9 @@ import crypto from 'crypto';
 import 'shared-types';
 import { RabbitMQClient, ExchangeType } from 'rabbitmq';
 
-import AppError from '../utils/AppError';
-import catchAsync from '../utils/catchAsync';
+
+import { AppError, catchAsync } from 'common-utils';
+
 import prisma from '../utils/prisma';
 
 import { User } from '../types/prisma-client';
@@ -74,6 +75,7 @@ export const signupController = catchAsync(
         email,
         password: hashedPassword,
         role: 'USER',
+        kycStatus: 'PENDING',
         verified: false,
         verificationToken: verificationTokenHash,
         avatar,
@@ -102,12 +104,25 @@ export const loginController = catchAsync(
 
     const { email, password } = zodResult.data;
 
-    const user = await prisma.user.findFirst({
+    let user = await prisma.user.findFirst({
       where: { email },
     });
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return next(new AppError('Incorrect email or password', 401));
+    }
+
+    if (!user.verified) {
+      return next(
+        new AppError('Account is not verified, please check your email to verify the account.', 400)
+      );
+    }
+
+    if (!user.active) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { active: true },
+      });
     }
 
     createSendToken(user, 200, res);
@@ -270,6 +285,7 @@ export const oAuth = catchAsync(async (req: Request, res: Response, next: NextFu
         password: await bcrypt.hash(generatedPassword, 12),
         avatar: req.body.photo,
         role: 'USER',
+        kycStatus: 'PENDING',
         verified: true,
       },
     });
@@ -303,6 +319,7 @@ export const createAdminUser = catchAsync(
         email,
         password: hashedPassword,
         role: 'ADMIN',
+        kycStatus: 'NA',
         verified: true,
         avatar,
       },

@@ -1,8 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 
 import prisma from '../utils/prisma';
-import catchAsync from '../utils/catchAsync';
-import AppError from '../utils/AppError';
+
+import { catchAsync, AppError } from 'common-utils';
+
 import { updateMeSchema } from '../validators/userValidations';
 
 const filterObj = (obj: any, ...allowedFields: string[]) => {

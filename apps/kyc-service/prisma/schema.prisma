@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/types/prisma-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model KycUser {
+  id                 Int               @id @default(autoincrement())
+  authUserId         Int               @unique
+  email              String
+  phoneNumber        String
+  firstName          String
+  lastName           String
+  dateOfBirth        DateTime
+  addressLine        String
+  city               String
+  state              String
+  country            String
+  postalCode         String
+  nationality        String
+  panCardNumber      String
+  submissionDate     DateTime          @default(now())
+  verificationStatus KYCStatus         @default(PENDING)
+  lastUpdatedDate    DateTime          @updatedAt
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  documents          KycUserDocument[]
+}
+
+model KycUserDocument {
+  id                 Int                 @id @default(autoincrement())
+  kycUserId          Int
+  documentType       KYCUserDocumentType
+  documentNumber     String
+  documentUrl        String
+  documentExpiry     DateTime?
+  verificationStatus KYCStatus           @default(PENDING)
+  KycUser            KycUser             @relation(fields: [kycUserId], references: [id])
+}
+
+enum KYCUserDocumentType {
+  AADHAAR_CARD
+  PAN_CARD
+  PASSPORT
+  DRIVING_LICENSE
+}
+
+enum KYCStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
