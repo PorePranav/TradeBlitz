@@ -1,19 +1,22 @@
 import { Router } from 'express';
+import { protect } from '@tradeblitz/common-utils';
+
 import {
   signupController,
   loginController,
   forgotPassword,
   oAuth,
   resetPassword,
-  protect,
   updatePassword,
   verifyUser,
   createAdminUser,
   logout,
+  isLoggedIn,
 } from '../controllers/authController';
 
 const router = Router();
 
+router.get('/isLoggedIn', protect, isLoggedIn); 
 router.post('/signup', signupController);
 router.post('/login', loginController);
 router.post('/oauth', oAuth);

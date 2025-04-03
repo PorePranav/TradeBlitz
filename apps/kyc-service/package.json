@@ -16,6 +16,7 @@
   "type": "commonjs",
   "dependencies": {
     "@prisma/client": "^6.5.0",
-    "@tradeblitz/shared-types": "*"
+    "@tradeblitz/shared-types": "*",
+    "@tradeblitz/common-utils": "*"
   }
 }

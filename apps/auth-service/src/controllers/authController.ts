@@ -1,11 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
-import jwt, { JwtPayload } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 
-import 'shared-types';
+import '@tradeblitz/shared-types';
 import { RabbitMQClient, ExchangeType } from 'rabbitmq';
-
 
 import { AppError, catchAsync } from 'common-utils';
 
@@ -17,23 +16,17 @@ import { loginSchema, signupSchema } from '../validators/authValidations';
 const rabbitClient = new RabbitMQClient({ url: process.env.RABBITMQ_URL! });
 const producer = rabbitClient.getProducer();
 
-interface jwtPayload extends JwtPayload {
-  userId: number;
-  role: string;
-  iat: number;
-}
-
-const signToken = (userId: number, role: string) => {
-  return jwt.sign({ userId, role }, process.env.JWT_SECRET!, {
-    expiresIn: Number(process.env.JWT_EXPIRES_IN) * 24 * 60 * 60 * 1000,
+const signToken = (user: User) => {
+  return jwt.sign(user, process.env.JWT_SECRET!, {
+    expiresIn: Number(process.env.JWT_EXPIRES_IN) * 60,
   });
 };
 
 const createSendToken = (user: User, statusCode: number, res: Response) => {
-  const token = signToken(user.id, user.role);
+  const token = signToken(user);
 
   const cookieOptions = {
-    expires: new Date(Date.now() + Number(process.env.JWT_COOKIE_EXPIRES_IN) * 24 * 60 * 60 * 1000),
+    expires: new Date(Date.now() + Number(process.env.JWT_COOKIE_EXPIRES_IN) * 60 * 1000),
     httpOnly: true,
     sameSite: 'none' as const,
     secure: process.env.NODE_ENV === 'production',
@@ -130,20 +123,9 @@ export const loginController = catchAsync(
 );
 
 export const isLoggedIn = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  if (req.cookies.jwt) {
-    const decoded = (await jwt.verify(req.cookies.jwt, process.env.JWT_SECRET!)) as jwtPayload;
-
-    const fetchedUser = await prisma.user.findUnique({
-      where: {
-        id: (decoded as jwtPayload).userId,
-      },
-    });
-
-    if (!fetchedUser || fetchedUser.passwordChangedAt >= new Date(decoded.iat * 1000))
-      return next();
-  }
-
-  next();
+  res.status(200).json({
+    status: 'success',
+  });
 });
 
 export const forgotPassword = catchAsync(
@@ -250,7 +232,7 @@ export const updatePassword = catchAsync(
     }
 
     const fetchedUser = await prisma.user.findUnique({
-      where: { id: (req.user as User).id },
+      where: { id: req.user!.id },
     });
 
     if (!(await bcrypt.compare(req.body.currentPassword, fetchedUser!.password))) {
@@ -339,34 +321,3 @@ export const logout = catchAsync(async (req: Request, res: Response, next: NextF
     status: 'success',
   });
 });
-
-export const protect = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const token = req.cookies?.jwt;
-
-  if (!token || token == null)
-    return next(new AppError('You are not logged in. Please log in to get access', 401));
-
-  const decoded = (await jwt.verify(token, process.env.JWT_SECRET!)) as jwtPayload;
-  const fetchedUser = await prisma.user.findUnique({ where: { id: decoded.userId } });
-
-  if (!fetchedUser)
-    return next(new AppError('The user belonging to this token does no longer exist.', 401));
-
-  if (!fetchedUser.verified)
-    return next(
-      new AppError('Account is not verified, please check your email to verify the account.', 400)
-    );
-
-  req.user = fetchedUser as User;
-  next();
-});
-
-export const restrictTo = (...roles: string[]) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    if (!roles.includes((req.user as User).role)) {
-      return next(new AppError('You do not have permission to perform this action', 403));
-    }
-
-    next();
-  };
-};

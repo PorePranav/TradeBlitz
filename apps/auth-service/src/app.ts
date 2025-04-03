@@ -3,7 +3,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 
-import { AppError, globalErrorHandler } from 'common-utils';
+import { AppError, globalErrorHandler } from '@tradeblitz/common-utils';
 
 
 import authRouter from './routers/authRoutes';

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 
-import { protect } from '../controllers/authController';
+import { protect } from '@tradeblitz/common-utils';
 import { deleteMe, getMe, updateMe } from '../controllers/userController';
 
 const router = Router();

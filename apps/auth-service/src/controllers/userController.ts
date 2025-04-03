@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 
 import prisma from '../utils/prisma';
 
-import { catchAsync, AppError } from 'common-utils';
+import { catchAsync, AppError } from '@tradeblitz/common-utils';
 
 import { updateMeSchema } from '../validators/userValidations';
 

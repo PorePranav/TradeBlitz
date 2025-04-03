@@ -1,5 +1,5 @@
 import AppError from './AppError';
 import catchAsync from './catchAsync';
-import globalErrorHandler from './errorController';
+import { protect, restrictTo, errorHandler as globalErrorHandler } from './controllers';
 
-export { AppError, catchAsync, globalErrorHandler };
+export { AppError, catchAsync, globalErrorHandler, protect, restrictTo };
