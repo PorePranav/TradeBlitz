@@ -9,8 +9,8 @@ datasource db {
 }
 
 model KycProfile {
-  id                 Int               @id @default(autoincrement())
-  userId             Int               @unique
+  id                 Int              @id @default(autoincrement())
+  userId             Int              @unique
   email              String
   firstName          String
   lastName           String
@@ -22,34 +22,30 @@ model KycProfile {
   country            String
   postalCode         String
   nationality        String
-  panCardNumber      String
-  submissionDate     DateTime          @default(now())
-  verificationStatus KYCStatus         @default(PENDING)
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
-  documents          KycUserDocument[]
+  panNumber          String
+  aadhaarNumber      String
+  submissionDate     DateTime         @default(now())
+  verificationStatus Status           @default(PENDING)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  document           KycUserDocument?
 }
 
 model KycUserDocument {
-  id                 Int                 @id @default(autoincrement())
-  userId             Int
-  documentType       KYCUserDocumentType
-  documentNumber     String
-  documentUrl        String
-  documentExpiry     DateTime?
-  verificationStatus KYCStatus           @default(PENDING)
-  KycUser            KycProfile          @relation(fields: [userId], references: [id])
+  id                Int         @id @default(autoincrement())
+  userId            Int         @unique
+  aadhaarCardUrl    String
+  panCardUrl        String
+  aadhaarCardStatus Status
+  panCardStatus     Status
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  profile           KycProfile  @relation(fields: [userId], references: [userId])
 }
 
-enum KYCUserDocumentType {
-  AADHAAR_CARD
-  PAN_CARD
-  PASSPORT
-  DRIVING_LICENSE
-}
-
-enum KYCStatus {
+enum Status {
   PENDING
   APPROVED
   REJECTED
+  INREVIEW
 }
