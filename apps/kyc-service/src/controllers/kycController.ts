@@ -1,7 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
+
 import '@tradeblitz/shared-types';
 import { AppError, catchAsync } from '@tradeblitz/common-utils';
-import prisma from '../utils/prisma';
+import { RabbitMQClient, ExchangeType } from 'rabbitmq';
+
 import {
   createKycSchema,
   createKycUserDocumentSchema,
@@ -9,6 +11,10 @@ import {
   updateKycUserDocumentSchema,
 } from '../validators/kycValidations';
 import { Status } from '../types/prisma-client';
+import prisma from '../utils/prisma';
+
+const rabbitClient = new RabbitMQClient({ url: process.env.RABBITMQ_URL! });
+const producer = rabbitClient.getProducer();
 
 export const getKycProfile = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const kycProfile = await prisma.kycProfile.findUnique({
@@ -238,6 +244,7 @@ export const updateKycStatus = catchAsync(
 
     const fetchedKyc = await prisma.kycProfile.findUnique({
       where: { userId: Number(userId) },
+      include: { document: true },
     });
 
     if (!fetchedKyc) {
@@ -248,9 +255,20 @@ export const updateKycStatus = catchAsync(
       return next(new AppError('KYC profile is not in review', 400));
     }
 
+    if (
+      fetchedKyc.document?.aadhaarCardStatus !== 'APPROVED' &&
+      fetchedKyc.document?.panCardStatus !== 'APPROVED'
+    ) {
+      return next(new AppError('Both documents must be approved before KYC can be approved', 400));
+    }
+
     const updatedKyc = await prisma.kycProfile.update({
       where: { userId: Number(userId) },
       data: { verificationStatus: status === 'APPROVED' ? Status.APPROVED : Status.REJECTED },
+    });
+
+    await producer.sendToQueue('kyc.approved', {
+      userId: Number(userId),
     });
 
     res.status(200).json({
