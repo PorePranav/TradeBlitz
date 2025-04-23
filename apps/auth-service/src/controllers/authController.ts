@@ -4,9 +4,9 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 
 import '@tradeblitz/shared-types';
-import { RabbitMQClient, ExchangeType } from 'rabbitmq';
+import { RabbitMQClient, ExchangeType } from '@tradeblitz/rabbitmq';
 
-import { AppError, catchAsync } from 'common-utils';
+import { AppError, catchAsync } from '@tradeblitz/common-utils';
 
 import prisma from '../utils/prisma';
 

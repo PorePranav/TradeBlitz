@@ -20,6 +20,17 @@ services:
       - kyc-db-data:/var/lib/postgresql/data
     ports:
       - '5433:5432'
+  
+  orders-db:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: orders
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - orders-db-data:/var/lib/postgresql/data
+    ports:
+      - '5434:5432'
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -35,4 +46,5 @@ services:
 volumes:
   auth-db-data:
   kyc-db-data:
+  orders-db-data:
   rabbitmq-data:

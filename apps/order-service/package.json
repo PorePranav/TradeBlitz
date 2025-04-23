@@ -1,0 +1,19 @@
+{
+  "name": "order-service",
+  "version": "1.0.0",
+  "description": "",
+  "license": "MIT",
+  "author": "Pranav Pore",
+  "type": "commonjs",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "dev:prod": "SET NODE_ENV=production & ts-node-dev --respawn --transpile-only src/server.ts"
+  },
+  "dependencies": {
+    "@tradeblitz/common-utils": "*",
+    "@tradeblitz/shared-types": "*"
+  },
+  "devDependencies": {}
+}

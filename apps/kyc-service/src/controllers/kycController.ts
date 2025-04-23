@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 
 import '@tradeblitz/shared-types';
 import { AppError, catchAsync } from '@tradeblitz/common-utils';
-import { RabbitMQClient, ExchangeType } from 'rabbitmq';
+import { RabbitMQClient } from '@tradeblitz/rabbitmq';
 
 import {
   createKycSchema,

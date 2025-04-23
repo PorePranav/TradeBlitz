@@ -1,5 +1,5 @@
 import { ConsumeMessage } from 'amqplib';
-import { ExchangeType, RabbitMQClient } from 'rabbitmq';
+import { ExchangeType, RabbitMQClient } from '@tradeblitz/rabbitmq';
 import mailGen from '../utils/mailGen';
 import { sendEmail } from '../utils/sendEmail';
 
