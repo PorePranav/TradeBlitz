@@ -7,9 +7,6 @@ import { AppError, globalErrorHandler } from '@tradeblitz/common-utils';
 
 import authRouter from './routers/authRoutes';
 import userRouter from './routers/userRoutes';
-import { kycConsumer } from './consumers/consumers';
-
-kycConsumer();
 
 const app = express();
 app.use(cookieParser());

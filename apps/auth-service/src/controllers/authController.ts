@@ -68,7 +68,6 @@ export const signupController = catchAsync(
         email,
         password: hashedPassword,
         role: 'USER',
-        kycStatus: 'PENDING',
         verified: false,
         verificationToken: verificationTokenHash,
         avatar,
@@ -267,7 +266,6 @@ export const oAuth = catchAsync(async (req: Request, res: Response, next: NextFu
         password: await bcrypt.hash(generatedPassword, 12),
         avatar: req.body.photo,
         role: 'USER',
-        kycStatus: 'PENDING',
         verified: true,
       },
     });
@@ -301,7 +299,6 @@ export const createAdminUser = catchAsync(
         email,
         password: hashedPassword,
         role: 'ADMIN',
-        kycStatus: 'NA',
         verified: true,
         avatar,
       },
