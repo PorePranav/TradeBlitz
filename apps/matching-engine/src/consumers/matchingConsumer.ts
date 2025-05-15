@@ -1,7 +1,7 @@
 import { ConsumeMessage } from 'amqplib';
 import { ExchangeType, RabbitMQClient } from '@tradeblitz/rabbitmq';
 import { processOrder } from '../core/matchingEngine';
-import { Order } from '../types/types';
+import { ProcessableOrder } from '@tradeblitz/common-types';
 
 const rabbitClient = new RabbitMQClient({ url: process.env.RABBITMQ_URL! });
 
@@ -13,7 +13,7 @@ export async function matchingConsumer() {
     async (msg: ConsumeMessage | null) => {
       if (!msg) return;
 
-      const order = JSON.parse(msg.content.toString()) as Order;
+      const order = JSON.parse(msg.content.toString()) as ProcessableOrder;
 
       console.log('Received order:', order);
 

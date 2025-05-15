@@ -13,8 +13,9 @@
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
+    "heap-js": "^2.6.0",
+    "@tradeblitz/common-types": "*",
     "@tradeblitz/common-utils": "*",
-    "@tradeblitz/rabbitmq": "*",
-    "heap-js": "^2.6.0"
+    "@tradeblitz/rabbitmq": "*"
   }
 }

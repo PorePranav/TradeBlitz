@@ -1,0 +1,15 @@
+{
+  "name": "data-feed-service",
+  "version": "1.0.0",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "dev:prod": "SET NODE_ENV=production & ts-node-dev --respawn --transpile-only src/server.ts"
+  },
+  "author": "Pranav Pore",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/socket.io": "^3.0.1"
+  }
+}

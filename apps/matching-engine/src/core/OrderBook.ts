@@ -1,21 +1,26 @@
 import { Heap } from 'heap-js';
-import { Order, Trade, OrderStatus } from '../types/types';
+import { Trade, OrderStatus } from '../types/types';
+import { ProcessableOrder } from '@tradeblitz/common-types';
 
 export class OrderBook {
-  private buyOrders!: Heap<Order>;
-  private sellOrders!: Heap<Order>;
-  private orderMap: Map<string, Order> = new Map();
+  private buyOrders!: Heap<ProcessableOrder>;
+  private sellOrders!: Heap<ProcessableOrder>;
+  private orderMap: Map<string, ProcessableOrder> = new Map();
   private lastTradedPrice: number | null = null;
 
   constructor(public securityId: string) {
-    this.buyOrders = new Heap<Order>((a, b) => {
+    this.buyOrders = new Heap<ProcessableOrder>((a, b) => {
       const priceDiff = b.price! - a.price!;
-      return priceDiff !== 0 ? priceDiff : a.timestamp - b.timestamp;
+      return priceDiff !== 0
+        ? priceDiff
+        : a.createdAt.getTime() - b.createdAt.getTime();
     });
 
-    this.sellOrders = new Heap<Order>((a, b) => {
+    this.sellOrders = new Heap<ProcessableOrder>((a, b) => {
       const priceDiff = a.price! - b.price!;
-      return priceDiff !== 0 ? priceDiff : a.timestamp - b.timestamp;
+      return priceDiff !== 0
+        ? priceDiff
+        : a.createdAt.getTime() - b.createdAt.getTime();
     });
   }
 
@@ -25,7 +30,7 @@ export class OrderBook {
 
   getBestBuyOrders(n: number = 5) {
     const heap = this.buyOrders.clone();
-    const result: Order[] = [];
+    const result: ProcessableOrder[] = [];
 
     for (let i = 0; i < n && !heap.isEmpty(); i++) result.push(heap.pop()!);
 
@@ -34,7 +39,7 @@ export class OrderBook {
 
   getBestSellOrders(n: number = 5) {
     const heap = this.sellOrders.clone();
-    const result: Order[] = [];
+    const result: ProcessableOrder[] = [];
 
     for (let i = 0; i < n && !heap.isEmpty(); i++) result.push(heap.pop()!);
 
@@ -48,7 +53,7 @@ export class OrderBook {
     };
   }
 
-  addOrder(order: Order): Trade[] {
+  addOrder(order: ProcessableOrder): Trade[] {
     this.orderMap.set(order.id, order);
     return order.side === 'BUY'
       ? this.matchBuyOrder(order)
@@ -66,7 +71,7 @@ export class OrderBook {
     else return this.sellOrders.remove(order);
   }
 
-  private matchBuyOrder(order: Order): Trade[] {
+  private matchBuyOrder(order: ProcessableOrder): Trade[] {
     const trades: Trade[] = [];
 
     while (!this.sellOrders.isEmpty() && order.remainingQuantity > 0) {
@@ -91,7 +96,7 @@ export class OrderBook {
         securityId: this.securityId,
         quantity: tradedQty,
         price: tradePrice,
-        timestamp: Date.now(),
+        executedAt: Date.now(),
       });
 
       order.filledQuantity += tradedQty;
@@ -115,7 +120,7 @@ export class OrderBook {
     return trades;
   }
 
-  private matchSellOrder(order: Order): Trade[] {
+  private matchSellOrder(order: ProcessableOrder): Trade[] {
     const trades: Trade[] = [];
 
     while (!this.buyOrders.isEmpty() && order.remainingQuantity > 0) {
@@ -139,7 +144,7 @@ export class OrderBook {
         securityId: this.securityId,
         quantity: tradedQty,
         price: tradePrice,
-        timestamp: Date.now(),
+        executedAt: Date.now(),
       });
 
       order.filledQuantity += tradedQty;
@@ -163,7 +168,7 @@ export class OrderBook {
     return trades;
   }
 
-  private determineStatus(order: Order): OrderStatus {
+  private determineStatus(order: ProcessableOrder): OrderStatus {
     if (order.filledQuantity === 0) return 'OPEN';
     if (order.remainingQuantity === 0) return 'FILLED';
     return 'PARTIALLY_FILLED';

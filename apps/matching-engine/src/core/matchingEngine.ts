@@ -1,9 +1,10 @@
-import { Order, Trade } from '../types/types';
+import { Trade } from '../types/types';
+import { ProcessableOrder } from '@tradeblitz/common-types';
 import { OrderBook } from './OrderBook';
 
 const orderBooks: Map<string, OrderBook> = new Map();
 
-export function processOrder(order: Order): Trade[] {
+export function processOrder(order: ProcessableOrder): Trade[] {
   if (!orderBooks.has(order.securityId))
     orderBooks.set(order.securityId, new OrderBook(order.securityId));
 

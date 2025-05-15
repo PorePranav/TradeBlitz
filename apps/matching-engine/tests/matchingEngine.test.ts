@@ -1,5 +1,5 @@
 import { OrderBook } from '../src/core/OrderBook';
-import { Order } from '../src/types/types';
+import { ProcessableOrder } from '@tradeblitz/common-types';
 import {
   processOrder,
   cancelOrder,
@@ -28,7 +28,7 @@ describe('OrderBook Class', () => {
   });
 
   test('should add a buy limit order to the book', () => {
-    const buyOrder: Order = {
+    const buyOrder: ProcessableOrder = {
       id: 'buy1',
       securityId: 'AAPL',
       type: 'LIMIT',
@@ -37,7 +37,7 @@ describe('OrderBook Class', () => {
       filledQuantity: 0,
       remainingQuantity: 100,
       price: 150,
-      timestamp: Date.now(),
+      createdAt: new Date(),
       status: 'OPEN',
     };
 
@@ -49,7 +49,7 @@ describe('OrderBook Class', () => {
   });
 
   test('should add a sell limit order to the book', () => {
-    const sellOrder: Order = {
+    const sellOrder: ProcessableOrder = {
       id: 'sell1',
       securityId: 'AAPL',
       type: 'LIMIT',
@@ -58,7 +58,7 @@ describe('OrderBook Class', () => {
       filledQuantity: 0,
       remainingQuantity: 100,
       price: 160,
-      timestamp: Date.now(),
+      createdAt: new Date(),
       status: 'OPEN',
     };
 
@@ -71,7 +71,7 @@ describe('OrderBook Class', () => {
 
   test('should match orders when prices cross', () => {
     // Add a sell order first
-    const sellOrder: Order = {
+    const sellOrder: ProcessableOrder = {
       id: 'sell1',
       securityId: 'AAPL',
       type: 'LIMIT',
@@ -80,13 +80,13 @@ describe('OrderBook Class', () => {
       filledQuantity: 0,
       remainingQuantity: 100,
       price: 150,
-      timestamp: Date.now(),
+      createdAt: new Date(),
       status: 'OPEN',
     };
     orderBook.addOrder(sellOrder);
 
     // Then add a buy order with a higher price
-    const buyOrder: Order = {
+    const buyOrder: ProcessableOrder = {
       id: 'buy1',
       securityId: 'AAPL',
       type: 'LIMIT',
@@ -95,7 +95,7 @@ describe('OrderBook Class', () => {
       filledQuantity: 0,
       remainingQuantity: 100,
       price: 155,
-      timestamp: Date.now(),
+      createdAt: new Date(),
       status: 'OPEN',
     };
 
@@ -113,7 +113,7 @@ describe('OrderBook Class', () => {
 
   test('should partially fill orders and update status', () => {
     // Add a sell order
-    const sellOrder: Order = {
+    const sellOrder: ProcessableOrder = {
       id: 'sell1',
       securityId: 'AAPL',
       type: 'LIMIT',
@@ -122,13 +122,13 @@ describe('OrderBook Class', () => {
       filledQuantity: 0,
       remainingQuantity: 100,
       price: 150,
-      timestamp: Date.now(),
+      createdAt: new Date(),
       status: 'OPEN',
     };
     orderBook.addOrder(sellOrder);
 
     // Add a buy order with smaller quantity
-    const buyOrder: Order = {
+    const buyOrder: ProcessableOrder = {
       id: 'buy1',
       securityId: 'AAPL',
       type: 'LIMIT',
@@ -137,7 +137,7 @@ describe('OrderBook Class', () => {
       filledQuantity: 0,
       remainingQuantity: 60,
       price: 155,
-      timestamp: Date.now(),
+      createdAt: new Date(),
       status: 'OPEN',
     };
 
@@ -156,7 +156,7 @@ describe('OrderBook Class', () => {
   });
 
   test('should prioritize orders by price and then time', () => {
-    const buyOrder1: Order = {
+    const buyOrder1: ProcessableOrder = {
       id: 'buy1',
       securityId: 'AAPL',
       type: 'LIMIT',
@@ -165,11 +165,11 @@ describe('OrderBook Class', () => {
       filledQuantity: 0,
       remainingQuantity: 100,
       price: 150,
-      timestamp: Date.now() - 200,
+      createdAt: new Date(Date.now() - 200),
       status: 'OPEN',
     };
 
-    const buyOrder2: Order = {
+    const buyOrder2: ProcessableOrder = {
       id: 'buy2',
       securityId: 'AAPL',
       type: 'LIMIT',
@@ -178,11 +178,11 @@ describe('OrderBook Class', () => {
       filledQuantity: 0,
       remainingQuantity: 100,
       price: 155,
-      timestamp: Date.now() - 100,
+      createdAt: new Date(Date.now() - 100),
       status: 'OPEN',
     };
 
-    const buyOrder3: Order = {
+    const buyOrder3: ProcessableOrder = {
       id: 'buy3',
       securityId: 'AAPL',
       type: 'LIMIT',
@@ -191,7 +191,7 @@ describe('OrderBook Class', () => {
       filledQuantity: 0,
       remainingQuantity: 100,
       price: 155,
-      timestamp: Date.now(),
+      createdAt: new Date(),
       status: 'OPEN',
     };
 
@@ -210,7 +210,7 @@ describe('OrderBook Class', () => {
     expect(bestBuys[1].price).toBe(155);
     expect(bestBuys[2].price).toBe(150);
 
-    // For same price, timestamp is the secondary criteria (earliest first)
+    // For same price, createdAt is the secondary criteria (earliest first)
     expect(bestBuys[0].id).toBe('buy2');
     expect(bestBuys[1].id).toBe('buy3');
     expect(bestBuys[2].id).toBe('buy1');
@@ -218,7 +218,7 @@ describe('OrderBook Class', () => {
 
   test('should handle market orders', () => {
     // Add a sell limit order
-    const sellLimitOrder: Order = {
+    const sellLimitOrder: ProcessableOrder = {
       id: 'sell1',
       securityId: 'AAPL',
       type: 'LIMIT',
@@ -227,13 +227,13 @@ describe('OrderBook Class', () => {
       filledQuantity: 0,
       remainingQuantity: 100,
       price: 150,
-      timestamp: Date.now() - 100,
+      createdAt: new Date(Date.now() - 100),
       status: 'OPEN',
     };
     orderBook.addOrder(sellLimitOrder);
 
     // Add a buy market order
-    const buyMarketOrder: Order = {
+    const buyMarketOrder: ProcessableOrder = {
       id: 'buy1',
       securityId: 'AAPL',
       type: 'MARKET',
@@ -241,7 +241,7 @@ describe('OrderBook Class', () => {
       originalQuantity: 100,
       filledQuantity: 0,
       remainingQuantity: 100,
-      timestamp: Date.now(),
+      createdAt: new Date(),
       status: 'OPEN',
     };
 
@@ -253,7 +253,7 @@ describe('OrderBook Class', () => {
   });
 
   test('should cancel orders correctly', () => {
-    const buyOrder: Order = {
+    const buyOrder: ProcessableOrder = {
       id: 'buy1',
       securityId: 'AAPL',
       type: 'LIMIT',
@@ -262,7 +262,7 @@ describe('OrderBook Class', () => {
       filledQuantity: 0,
       remainingQuantity: 100,
       price: 150,
-      timestamp: Date.now(),
+      createdAt: new Date(),
       status: 'OPEN',
     };
 
@@ -281,7 +281,7 @@ describe('OrderBook Class', () => {
 
   test('should not cancel filled orders', () => {
     // Add a sell order
-    const sellOrder: Order = {
+    const sellOrder: ProcessableOrder = {
       id: 'sell1',
       securityId: 'AAPL',
       type: 'LIMIT',
@@ -290,13 +290,13 @@ describe('OrderBook Class', () => {
       filledQuantity: 0,
       remainingQuantity: 100,
       price: 150,
-      timestamp: Date.now() - 100,
+      createdAt: new Date(Date.now() - 100),
       status: 'OPEN',
     };
     orderBook.addOrder(sellOrder);
 
     // Add a matching buy order
-    const buyOrder: Order = {
+    const buyOrder: ProcessableOrder = {
       id: 'buy1',
       securityId: 'AAPL',
       type: 'LIMIT',
@@ -305,7 +305,7 @@ describe('OrderBook Class', () => {
       filledQuantity: 0,
       remainingQuantity: 100,
       price: 155,
-      timestamp: Date.now(),
+      createdAt: new Date(),
       status: 'OPEN',
     };
     orderBook.addOrder(buyOrder);
@@ -323,7 +323,7 @@ describe('OrderBookService', () => {
 
   test('should process orders across multiple securities', () => {
     // Add orders for AAPL
-    const buyApple: Order = {
+    const buyApple: ProcessableOrder = {
       id: 'buy_aapl',
       securityId: 'AAPL',
       type: 'LIMIT',
@@ -332,12 +332,12 @@ describe('OrderBookService', () => {
       filledQuantity: 0,
       remainingQuantity: 100,
       price: 150,
-      timestamp: Date.now(),
+      createdAt: new Date(),
       status: 'OPEN',
     };
 
     // Add orders for MSFT
-    const buyMicrosoft: Order = {
+    const buyMicrosoft: ProcessableOrder = {
       id: 'buy_msft',
       securityId: 'MSFT',
       type: 'LIMIT',
@@ -346,7 +346,7 @@ describe('OrderBookService', () => {
       filledQuantity: 0,
       remainingQuantity: 100,
       price: 250,
-      timestamp: Date.now(),
+      createdAt: new Date(),
       status: 'OPEN',
     };
 
@@ -363,7 +363,7 @@ describe('OrderBookService', () => {
   });
 
   test('should cancel orders correctly through service', () => {
-    const buyOrder: Order = {
+    const buyOrder: ProcessableOrder = {
       id: 'buy1',
       securityId: 'AAPL',
       type: 'LIMIT',
@@ -372,7 +372,7 @@ describe('OrderBookService', () => {
       filledQuantity: 0,
       remainingQuantity: 100,
       price: 150,
-      timestamp: Date.now(),
+      createdAt: new Date(),
       status: 'OPEN',
     };
 
@@ -386,7 +386,7 @@ describe('OrderBookService', () => {
 
   test('should return correct last traded price', () => {
     // Add a sell order
-    const sellOrder: Order = {
+    const sellOrder: ProcessableOrder = {
       id: 'sell1',
       securityId: 'AAPL',
       type: 'LIMIT',
@@ -395,13 +395,13 @@ describe('OrderBookService', () => {
       filledQuantity: 0,
       remainingQuantity: 100,
       price: 150,
-      timestamp: Date.now() - 100,
+      createdAt: new Date(Date.now() - 100),
       status: 'OPEN',
     };
     processOrder(sellOrder);
 
     // Add a matching buy order
-    const buyOrder: Order = {
+    const buyOrder: ProcessableOrder = {
       id: 'buy1',
       securityId: 'AAPL',
       type: 'LIMIT',
@@ -410,7 +410,7 @@ describe('OrderBookService', () => {
       filledQuantity: 0,
       remainingQuantity: 100,
       price: 155,
-      timestamp: Date.now(),
+      createdAt: new Date(),
       status: 'OPEN',
     };
     processOrder(buyOrder);
@@ -421,7 +421,7 @@ describe('OrderBookService', () => {
 
   test('should return market depth correctly', () => {
     // Add several buy and sell orders
-    const buy1: Order = {
+    const buy1: ProcessableOrder = {
       id: 'buy1',
       securityId: 'AAPL',
       type: 'LIMIT',
@@ -430,11 +430,11 @@ describe('OrderBookService', () => {
       filledQuantity: 0,
       remainingQuantity: 100,
       price: 150,
-      timestamp: Date.now(),
+      createdAt: new Date(),
       status: 'OPEN',
     };
 
-    const buy2: Order = {
+    const buy2: ProcessableOrder = {
       id: 'buy2',
       securityId: 'AAPL',
       type: 'LIMIT',
@@ -443,11 +443,11 @@ describe('OrderBookService', () => {
       filledQuantity: 0,
       remainingQuantity: 100,
       price: 148,
-      timestamp: Date.now(),
+      createdAt: new Date(),
       status: 'OPEN',
     };
 
-    const sell1: Order = {
+    const sell1: ProcessableOrder = {
       id: 'sell1',
       securityId: 'AAPL',
       type: 'LIMIT',
@@ -456,11 +456,11 @@ describe('OrderBookService', () => {
       filledQuantity: 0,
       remainingQuantity: 100,
       price: 152,
-      timestamp: Date.now(),
+      createdAt: new Date(),
       status: 'OPEN',
     };
 
-    const sell2: Order = {
+    const sell2: ProcessableOrder = {
       id: 'sell2',
       securityId: 'AAPL',
       type: 'LIMIT',
@@ -469,7 +469,7 @@ describe('OrderBookService', () => {
       filledQuantity: 0,
       remainingQuantity: 100,
       price: 154,
-      timestamp: Date.now(),
+      createdAt: new Date(),
       status: 'OPEN',
     };
 
