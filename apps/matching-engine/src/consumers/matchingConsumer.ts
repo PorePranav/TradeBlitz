@@ -22,20 +22,18 @@ export async function matchingConsumer() {
     async (msg: ConsumeMessage | null) => {
       if (!msg) return;
       const order = JSON.parse(msg.content.toString()) as ProcessableOrder;
-      console.log('Received order:', order);
 
       try {
         const trades = processOrder(order);
         const ltp = getLastTradedPrice(order.securityId);
         const orderBook = getMarketDepth(order.securityId, 5);
 
-        if (trades.length > 0) {
-          console.log('Trades:', trades);
-          await producer.sendToQueue(
-            'matching-engine.ltp-updated.data-feed-service.queue',
-            { securityId: order.securityId, ltp, orderBook }
-          );
+        await producer.sendToQueue(
+          'matching-engine.ltp-updated.data-feed-service.queue',
+          { securityId: order.securityId, ltp, orderBook }
+        );
 
+        if (trades.length > 0) {
           await producer.sendToQueue(
             'matching-engine.order-executed.order-service.queue',
             trades
@@ -43,6 +41,9 @@ export async function matchingConsumer() {
         }
       } catch (err) {
         if (err instanceof OrderRejectedError) {
+          const orderBook = getMarketDepth(order.securityId, 5);
+          console.log('Order rejected: ', order.id);
+          console.log(orderBook);
           await producer.sendToQueue(
             'matching-engine.order-rejected.order-service.queue',
             { orderId: order.id, reason: err.message }

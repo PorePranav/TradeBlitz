@@ -30,8 +30,6 @@ export function broadcastMarketDepth(
     bestSellOrders: BestOrder[];
   }
 ) {
-  console.log('Broadcasting Market Depth');
-
   io.to(securityId).emit('marketDepth', {
     type: 'marketDepth',
     securityId,

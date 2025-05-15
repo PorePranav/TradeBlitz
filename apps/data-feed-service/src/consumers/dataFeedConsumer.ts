@@ -31,12 +31,6 @@ export async function dataFeedConsumer() {
         };
       } = JSON.parse(msg.content.toString());
 
-      console.log('Received LTP update:', {
-        securityId,
-        ltp,
-        orderBook,
-      });
-
       broadcastMarketDepth(io, securityId, ltp, orderBook);
 
       consumer.ack(msg);

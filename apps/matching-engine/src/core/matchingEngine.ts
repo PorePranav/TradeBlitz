@@ -13,8 +13,8 @@ export function processOrder(order: ProcessableOrder): Trade[] {
   if (order.type === 'MARKET') {
     const hasLiquidity =
       order.side === 'BUY'
-        ? !(orderBook.getBestBuyOrders(1).length === 0)
-        : !(orderBook.getBestSellOrders(1).length === 0);
+        ? !(orderBook.getBestSellOrders(1).length === 0)
+        : !(orderBook.getBestBuyOrders(1).length === 0);
 
     if (!hasLiquidity) {
       order.status = 'REJECTED';
@@ -57,5 +57,5 @@ export function getMarketDepth(securityId: string, n: number = 5) {
   const orderBook = orderBooks.get(securityId);
   return orderBook
     ? orderBook.getMarketDepth(n)
-    : { bestBuyOrders: [], bestSellOrders: [] };
+    : { buyOrders: [], sellOrders: [] };
 }
