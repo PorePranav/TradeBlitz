@@ -1,0 +1,20 @@
+{
+  "name": "matching-service",
+  "version": "1.0.0",
+  "main": "dist/server.js",
+  "author": "Pranav Pore",
+  "license": "MIT",
+  "description": "",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "dev:prod": "SET NODE_ENV=production & ts-node-dev --respawn --transpile-only src/server.ts",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "dependencies": {
+    "@tradeblitz/common-utils": "*",
+    "@tradeblitz/rabbitmq": "*",
+    "heap-js": "^2.6.0"
+  }
+}
