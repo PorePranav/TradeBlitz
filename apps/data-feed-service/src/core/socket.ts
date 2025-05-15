@@ -1,3 +1,4 @@
+import { BestOrder, ProcessableOrder } from '@tradeblitz/common-types';
 import { Server, Socket } from 'socket.io';
 
 export const setupSocketHandlers = (io: Server) => {
@@ -24,12 +25,17 @@ export function broadcastMarketDepth(
   io: Server,
   securityId: string,
   ltp: number,
-  tradeBook: { price: number; quantity: number; timestamp: number }[]
+  orderBook: {
+    bestBuyOrders: BestOrder[];
+    bestSellOrders: BestOrder[];
+  }
 ) {
+  console.log('Broadcasting Market Depth');
+
   io.to(securityId).emit('marketDepth', {
     type: 'marketDepth',
     securityId,
     ltp,
-    tradeBook,
+    orderBook,
   });
 }

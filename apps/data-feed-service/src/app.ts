@@ -1,25 +1,29 @@
-import express from 'express';
+import cors from 'cors';
+import express, { Request, Response, NextFunction } from 'express';
+import morgan from 'morgan';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import { setupSocketHandlers, broadcastMarketDepth } from './socket';
 
-import { Request, Response, NextFunction } from 'express';
+import { setupSocketHandlers, broadcastMarketDepth } from './core/socket';
+import { AppError, globalErrorHandler } from '@tradeblitz/common-utils';
+import { dataFeedConsumer } from './consumers/dataFeedConsumer';
+
+dataFeedConsumer();
 
 const app = express();
-const server = createServer(app);
-const io = new Server(server, { cors: { origin: '*' } });
 
+const socketIoApp = createServer(app);
+const io = new Server(socketIoApp, { cors: { origin: '*' } });
 setupSocketHandlers(io);
 
-app.get('/', (req: Request, res: Response, next: NextFunction) => {
-  res.send('Hello World!');
+app.use(express.json());
+app.use(morgan('dev'));
+app.all('/{*splat}', (req: Request, res: Response, next: NextFunction) => {
+  return next(
+    new AppError(`Can't find ${req.originalUrl} on this server!`, 404)
+  );
 });
 
-//Temp
-setInterval(() => {
-  broadcastMarketDepth(io, 'RELIANCE', 2785.65, [
-    { price: 2785.65, quantity: 15, timestamp: Date.now() },
-  ]);
-}, 5000);
+app.use(globalErrorHandler);
 
-export { server };
+export { socketIoApp, io };

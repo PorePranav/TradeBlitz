@@ -9,6 +9,27 @@ export interface ProcessableOrder {
   filledQuantity: number;
   remainingQuantity: number;
   price?: number;
+  rejectionReason?: string;
   createdAt: Date;
   status: Order.OrderStatus;
+}
+
+export interface Trade {
+  buyOrderId: string;
+  sellOrderId: string;
+  securityId: string;
+  quantity: number;
+  price: number;
+  executedAt: Date;
+}
+
+export interface BestOrder {
+  price?: number;
+  quantity: number;
+}
+
+export interface MarketDepth {
+  securityId: string;
+  buyOrders: BestOrder[];
+  sellOrders: BestOrder[];
 }

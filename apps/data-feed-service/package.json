@@ -9,6 +9,10 @@
   "author": "Pranav Pore",
   "license": "ISC",
   "description": "",
+  "dependencies": {
+    "@tradeblitz/common-utils": "*",
+    "@tradeblitz/common-types": "*"
+  },
   "devDependencies": {
     "@types/socket.io": "^3.0.1"
   }

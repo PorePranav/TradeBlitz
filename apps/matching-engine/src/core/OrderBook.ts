@@ -1,6 +1,11 @@
 import { Heap } from 'heap-js';
-import { Trade, OrderStatus } from '../types/types';
-import { ProcessableOrder } from '@tradeblitz/common-types';
+import {
+  BestOrder,
+  MarketDepth,
+  ProcessableOrder,
+  Trade,
+} from '@tradeblitz/common-types';
+import { OrderTypes } from '@tradeblitz/common-types';
 
 export class OrderBook {
   private buyOrders!: Heap<ProcessableOrder>;
@@ -30,26 +35,55 @@ export class OrderBook {
 
   getBestBuyOrders(n: number = 5) {
     const heap = this.buyOrders.clone();
-    const result: ProcessableOrder[] = [];
+    const result: BestOrder[] = [];
 
-    for (let i = 0; i < n && !heap.isEmpty(); i++) result.push(heap.pop()!);
+    for (let i = 0; i < n && !heap.isEmpty(); i++) {
+      const {
+        id,
+        type,
+        originalQuantity,
+        filledQuantity,
+        remainingQuantity: quantity,
+        createdAt,
+        status,
+        securityId,
+        side,
+        ...bestOrderData
+      } = heap.pop()!;
+
+      result.push({ ...bestOrderData, quantity });
+    }
 
     return result;
   }
 
   getBestSellOrders(n: number = 5) {
     const heap = this.sellOrders.clone();
-    const result: ProcessableOrder[] = [];
+    const result: BestOrder[] = [];
 
-    for (let i = 0; i < n && !heap.isEmpty(); i++) result.push(heap.pop()!);
+    for (let i = 0; i < n && !heap.isEmpty(); i++) {
+      const {
+        id,
+        type,
+        originalQuantity,
+        filledQuantity,
+        remainingQuantity: quantity,
+        createdAt,
+        status,
+        ...bestOrderData
+      } = heap.pop()!;
+
+      result.push({ ...bestOrderData, quantity });
+    }
 
     return result;
   }
 
-  getMarketDepth(n: number = 5) {
+  getMarketDepth(n: number = 5): MarketDepth {
     return {
-      bestBuyOrders: this.getBestBuyOrders(n),
-      bestSellOrders: this.getBestSellOrders(n),
+      securityId: this.securityId,
+      buyOrders: this.getBestBuyOrders(n),
+      sellOrders: this.getBestSellOrders(n),
     };
   }
 
@@ -96,7 +130,7 @@ export class OrderBook {
         securityId: this.securityId,
         quantity: tradedQty,
         price: tradePrice,
-        executedAt: Date.now(),
+        executedAt: new Date(),
       });
 
       order.filledQuantity += tradedQty;
@@ -144,7 +178,7 @@ export class OrderBook {
         securityId: this.securityId,
         quantity: tradedQty,
         price: tradePrice,
-        executedAt: Date.now(),
+        executedAt: new Date(),
       });
 
       order.filledQuantity += tradedQty;
@@ -168,7 +202,7 @@ export class OrderBook {
     return trades;
   }
 
-  private determineStatus(order: ProcessableOrder): OrderStatus {
+  private determineStatus(order: ProcessableOrder): OrderTypes.OrderStatus {
     if (order.filledQuantity === 0) return 'OPEN';
     if (order.remainingQuantity === 0) return 'FILLED';
     return 'PARTIALLY_FILLED';

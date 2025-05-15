@@ -70,7 +70,6 @@ describe('OrderBook Class', () => {
   });
 
   test('should match orders when prices cross', () => {
-    // Add a sell order first
     const sellOrder: ProcessableOrder = {
       id: 'sell1',
       securityId: 'AAPL',
@@ -85,7 +84,6 @@ describe('OrderBook Class', () => {
     };
     orderBook.addOrder(sellOrder);
 
-    // Then add a buy order with a higher price
     const buyOrder: ProcessableOrder = {
       id: 'buy1',
       securityId: 'AAPL',
@@ -105,14 +103,13 @@ describe('OrderBook Class', () => {
     expect(trades[0].buyOrderId).toBe('buy1');
     expect(trades[0].sellOrderId).toBe('sell1');
     expect(trades[0].quantity).toBe(100);
-    expect(trades[0].price).toBe(150); // Trade should happen at the sell price
+    expect(trades[0].price).toBe(150);
     expect(orderBook.getBestBuyOrders()).toHaveLength(0);
     expect(orderBook.getBestSellOrders()).toHaveLength(0);
     expect(orderBook.getLastTradedPrice()).toBe(150);
   });
 
   test('should partially fill orders and update status', () => {
-    // Add a sell order
     const sellOrder: ProcessableOrder = {
       id: 'sell1',
       securityId: 'AAPL',
@@ -127,7 +124,6 @@ describe('OrderBook Class', () => {
     };
     orderBook.addOrder(sellOrder);
 
-    // Add a buy order with smaller quantity
     const buyOrder: ProcessableOrder = {
       id: 'buy1',
       securityId: 'AAPL',
@@ -146,7 +142,6 @@ describe('OrderBook Class', () => {
     expect(trades).toHaveLength(1);
     expect(trades[0].quantity).toBe(60);
 
-    // The sell order should still be in the book with updated quantity
     const remainingSellOrders = orderBook.getBestSellOrders();
     expect(remainingSellOrders).toHaveLength(1);
     expect(remainingSellOrders[0].id).toBe('sell1');
@@ -200,24 +195,19 @@ describe('OrderBook Class', () => {
     orderBook.addOrder(buyOrder3);
 
     const bestBuys = orderBook.getBestBuyOrders(3);
-    console.log(bestBuys);
 
-    // Verify we got all three orders
     expect(bestBuys).toHaveLength(3);
 
-    // Price is the primary sorting criteria (highest first)
     expect(bestBuys[0].price).toBe(155);
     expect(bestBuys[1].price).toBe(155);
     expect(bestBuys[2].price).toBe(150);
 
-    // For same price, createdAt is the secondary criteria (earliest first)
     expect(bestBuys[0].id).toBe('buy2');
     expect(bestBuys[1].id).toBe('buy3');
     expect(bestBuys[2].id).toBe('buy1');
   });
 
   test('should handle market orders', () => {
-    // Add a sell limit order
     const sellLimitOrder: ProcessableOrder = {
       id: 'sell1',
       securityId: 'AAPL',
@@ -232,7 +222,6 @@ describe('OrderBook Class', () => {
     };
     orderBook.addOrder(sellLimitOrder);
 
-    // Add a buy market order
     const buyMarketOrder: ProcessableOrder = {
       id: 'buy1',
       securityId: 'AAPL',
@@ -248,7 +237,7 @@ describe('OrderBook Class', () => {
     const trades = orderBook.addOrder(buyMarketOrder);
 
     expect(trades).toHaveLength(1);
-    expect(trades[0].price).toBe(150); // Should execute at the limit order price
+    expect(trades[0].price).toBe(150);
     expect(orderBook.getBestSellOrders()).toHaveLength(0);
   });
 
@@ -280,7 +269,6 @@ describe('OrderBook Class', () => {
   });
 
   test('should not cancel filled orders', () => {
-    // Add a sell order
     const sellOrder: ProcessableOrder = {
       id: 'sell1',
       securityId: 'AAPL',
@@ -295,7 +283,6 @@ describe('OrderBook Class', () => {
     };
     orderBook.addOrder(sellOrder);
 
-    // Add a matching buy order
     const buyOrder: ProcessableOrder = {
       id: 'buy1',
       securityId: 'AAPL',
@@ -310,7 +297,6 @@ describe('OrderBook Class', () => {
     };
     orderBook.addOrder(buyOrder);
 
-    // Try to cancel the buy order (which should be filled)
     const cancelled = orderBook.cancelOrder('buy1');
     expect(cancelled).toBe(false);
   });
@@ -322,7 +308,6 @@ describe('OrderBookService', () => {
   });
 
   test('should process orders across multiple securities', () => {
-    // Add orders for AAPL
     const buyApple: ProcessableOrder = {
       id: 'buy_aapl',
       securityId: 'AAPL',
@@ -336,7 +321,6 @@ describe('OrderBookService', () => {
       status: 'OPEN',
     };
 
-    // Add orders for MSFT
     const buyMicrosoft: ProcessableOrder = {
       id: 'buy_msft',
       securityId: 'MSFT',
@@ -385,7 +369,6 @@ describe('OrderBookService', () => {
   });
 
   test('should return correct last traded price', () => {
-    // Add a sell order
     const sellOrder: ProcessableOrder = {
       id: 'sell1',
       securityId: 'AAPL',
@@ -400,7 +383,6 @@ describe('OrderBookService', () => {
     };
     processOrder(sellOrder);
 
-    // Add a matching buy order
     const buyOrder: ProcessableOrder = {
       id: 'buy1',
       securityId: 'AAPL',
@@ -416,11 +398,10 @@ describe('OrderBookService', () => {
     processOrder(buyOrder);
 
     expect(getLastTradedPrice('AAPL')).toBe(150);
-    expect(getLastTradedPrice('MSFT')).toBeNull(); // No trades for MSFT
+    expect(getLastTradedPrice('MSFT')).toBeNull();
   });
 
   test('should return market depth correctly', () => {
-    // Add several buy and sell orders
     const buy1: ProcessableOrder = {
       id: 'buy1',
       securityId: 'AAPL',
@@ -483,11 +464,9 @@ describe('OrderBookService', () => {
     expect(depth.bestBuyOrders).toHaveLength(2);
     expect(depth.bestSellOrders).toHaveLength(2);
 
-    // Buy orders should be sorted highest price first
     expect(depth.bestBuyOrders[0].price).toBe(150);
     expect(depth.bestBuyOrders[1].price).toBe(148);
 
-    // Sell orders should be sorted lowest price first
     expect(depth.bestSellOrders[0].price).toBe(152);
     expect(depth.bestSellOrders[1].price).toBe(154);
   });
