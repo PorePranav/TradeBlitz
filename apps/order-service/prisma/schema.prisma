@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/types/prisma-client"
+  output   = "../src/types/prismaTypes"
 }
 
 datasource db {
@@ -9,16 +9,17 @@ datasource db {
 }
 
 model Order {
-  id         String         @id @default(uuid())
-  userId     Int
-  securityId Int
-  type       OrderType
-  side       Side
-  quantity   Float
-  price      Float?
-  status     OrderStatus @default(OPEN)
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  id              String      @id @default(uuid())
+  userId          String
+  securityId      String
+  type            OrderType
+  side            Side
+  quantity        Float
+  price           Float?
+  status          OrderStatus @default(OPEN)
+  rejectionReason String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 }
 
 enum OrderType {
