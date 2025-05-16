@@ -1,6 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+import { CustomJwtPayload } from '@tradeblitz/common-types';
+import '@tradeblitz/common-types';
 
 import AppError from './AppError';
+import catchAsync from './catchAsync';
 
 const sendErrorDev = (err: AppError, res: Response) => {
   res.status(err.statusCode).json({
@@ -55,5 +59,25 @@ const errorHandler = (
     sendErrorProd(err, res);
   }
 };
+
+export const protect = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const token = req.cookies?.jwt;
+
+    if (!token || token === null)
+      return next(
+        new AppError('You are not logged in! Please log in to get access.', 401)
+      );
+
+    const decodedUser = (await jwt.verify(
+      token,
+      process.env.JWT_SECRET as string
+    )) as CustomJwtPayload;
+
+    req.user = decodedUser as CustomJwtPayload;
+
+    next();
+  }
+);
 
 export { errorHandler };

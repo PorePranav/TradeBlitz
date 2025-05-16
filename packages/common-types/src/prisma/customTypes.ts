@@ -33,3 +33,10 @@ export interface MarketDepth {
   buyOrders: BestOrder[];
   sellOrders: BestOrder[];
 }
+
+export interface CustomJwtPayload {
+  id: string;
+  role: string;
+  iat?: number;
+  exp?: number;
+}

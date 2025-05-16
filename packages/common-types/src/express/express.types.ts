@@ -1,9 +1,9 @@
-// import { User } from '../../../../apps/auth-service/src/types/prisma-client';
+import { CustomJwtPayload } from '../prisma/customTypes';
 
-// declare global {
-//   namespace Express {
-//     interface Request {
-//       user?: User;
-//     }
-//   }
-// }
+declare global {
+  namespace Express {
+    interface Request {
+      user?: CustomJwtPayload;
+    }
+  }
+}
