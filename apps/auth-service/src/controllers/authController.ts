@@ -63,7 +63,7 @@ export const signupController = catchAsync(
     });
 
     await producer.sendToQueue(
-      'auth-service.user-created.notification-service.fanout',
+      'auth-service.user-created.notification-service.queue',
       { email: newUser.email, name: newUser.name }
     );
 
