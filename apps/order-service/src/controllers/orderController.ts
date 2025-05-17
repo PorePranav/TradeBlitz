@@ -1,10 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
+import axios, { AxiosError } from 'axios';
 
 import { RabbitMQClient } from '@tradeblitz/rabbitmq';
 import { AppError, catchAsync } from '@tradeblitz/common-utils';
 
 import prisma from '../utils/prisma';
 import { OrderStatus, OrderType } from '../types/prismaTypes';
+import {
+  checkUserBalance,
+  verifySecurityExists,
+} from '../utils/orderValidators';
 
 const rabbitClient = new RabbitMQClient({ url: process.env.RABBITMQ_URL! });
 const producer = rabbitClient.getProducer();
@@ -13,7 +18,8 @@ export const createOrder = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { securityId, type, side, quantity, price } = req.body;
 
-    //TODO: Check user money balance if buy order and security balance if sell order and if the security exists
+    await verifySecurityExists(securityId);
+    await checkUserBalance(securityId, req.user!.id, type, side, quantity);
 
     const newOrder = await prisma.order.create({
       data: {

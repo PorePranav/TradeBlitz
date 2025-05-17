@@ -67,20 +67,30 @@ const errorHandler = (
 
 const protect = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const token = req.cookies?.jwt;
+    let token: string | undefined;
 
-    if (!token || token === null)
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+      if (token === process.env.SERVICE_AUTH_TOKEN) {
+        return next();
+      }
+    }
+
+    token = req.cookies?.jwt;
+
+    if (!token || token === null) {
       return next(
         new AppError('You are not logged in! Please log in to get access.', 401)
       );
+    }
 
-    const decodedUser = (await jwt.verify(
+    const decodedUser = jwt.verify(
       token,
       process.env.JWT_SECRET as string
-    )) as CustomJwtPayload;
+    ) as CustomJwtPayload;
 
-    req.user = decodedUser as CustomJwtPayload;
-
+    req.user = decodedUser;
     next();
   }
 );
