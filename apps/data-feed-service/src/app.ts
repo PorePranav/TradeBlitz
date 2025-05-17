@@ -4,7 +4,7 @@ import morgan from 'morgan';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 
-import { setupSocketHandlers, broadcastMarketDepth } from './core/socket';
+import { setupSocketHandlers } from './core/socket';
 import { AppError, globalErrorHandler } from '@tradeblitz/common-utils';
 import { dataFeedConsumer } from './consumers/dataFeedConsumer';
 
@@ -26,4 +26,4 @@ app.all('/{*splat}', (req: Request, res: Response, next: NextFunction) => {
 
 app.use(globalErrorHandler);
 
-export { socketIoApp, io };
+export { socketIoApp, io, app };
