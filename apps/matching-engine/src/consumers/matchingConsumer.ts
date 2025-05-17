@@ -1,5 +1,5 @@
 import { ConsumeMessage } from 'amqplib';
-import { RabbitMQClient } from '@tradeblitz/rabbitmq';
+import { ExchangeType, RabbitMQClient } from '@tradeblitz/rabbitmq';
 import {
   getLastTradedPrice,
   getMarketDepth,
@@ -28,9 +28,12 @@ export async function matchingConsumer() {
         const ltp = getLastTradedPrice(order.securityId);
         const orderBook = getMarketDepth(order.securityId, 5);
 
-        await producer.sendToQueue(
-          'matching-engine.ltp-updated.data-feed-service.queue',
-          { securityId: order.securityId, ltp, orderBook }
+        await producer.publish(
+          { securityId: order.securityId, ltp, orderBook },
+          {
+            exchangeName: 'matching-engine.ltp-updated.fanout',
+            exchangeType: ExchangeType.FANOUT,
+          }
         );
 
         if (trades.length > 0) {

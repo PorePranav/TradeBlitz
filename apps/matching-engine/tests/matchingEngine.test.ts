@@ -25,7 +25,7 @@ describe('OrderBook Class', () => {
   test('should initialize with empty order books', () => {
     expect(orderBook.getBestBuyOrders()).toHaveLength(0);
     expect(orderBook.getBestSellOrders()).toHaveLength(0);
-    expect(orderBook.getLastTradedPrice()).toBeNull();
+    expect(orderBook.getLastTradedPrice()).toBe(0);
   });
 
   test('should add a buy limit order to the book', () => {

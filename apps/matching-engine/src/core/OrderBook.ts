@@ -11,25 +11,25 @@ export class OrderBook {
   private buyOrders!: Heap<ProcessableOrder>;
   private sellOrders!: Heap<ProcessableOrder>;
   private orderMap: Map<string, ProcessableOrder> = new Map();
-  private lastTradedPrice: number | null = null;
+  private lastTradedPrice: number = 0;
 
   constructor(public securityId: string) {
     this.buyOrders = new Heap<ProcessableOrder>((a, b) => {
       const priceDiff = b.price! - a.price!;
       return priceDiff !== 0
         ? priceDiff
-        : a.createdAt.getTime() - b.createdAt.getTime();
+        : new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
     });
 
     this.sellOrders = new Heap<ProcessableOrder>((a, b) => {
       const priceDiff = a.price! - b.price!;
       return priceDiff !== 0
         ? priceDiff
-        : a.createdAt.getTime() - b.createdAt.getTime();
+        : new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
     });
   }
 
-  getLastTradedPrice(): number | null {
+  getLastTradedPrice(): number {
     return this.lastTradedPrice;
   }
 
