@@ -1,7 +1,7 @@
 import AppError from './AppError';
 import catchAsync from './catchAsync';
 import { validateRequest } from './utilFunctions';
-import { errorHandler, protect } from './controllers';
+import { errorHandler, protect, restrictTo } from './controllers';
 
 export {
   AppError,
@@ -9,4 +9,5 @@ export {
   validateRequest,
   errorHandler as globalErrorHandler,
   protect,
+  restrictTo,
 };

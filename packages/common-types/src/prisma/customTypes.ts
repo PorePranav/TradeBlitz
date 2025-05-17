@@ -1,4 +1,5 @@
-import Order from '../../../../apps/order-service/src/types/prisma-client';
+import { Role } from '../../../../apps/auth-service/src/types/prismaTypes';
+import Order from '../../../../apps/order-service/src/types/prismaTypes';
 
 export interface ProcessableOrder {
   id: string;
@@ -36,7 +37,7 @@ export interface MarketDepth {
 
 export interface CustomJwtPayload {
   id: string;
-  role: string;
+  role: Role;
   iat?: number;
   exp?: number;
 }

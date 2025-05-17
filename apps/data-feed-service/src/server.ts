@@ -14,11 +14,11 @@ const socketPort = process.env.SOCKET_PORT || 3007;
 
 if (process.env.NODE_ENV !== 'production') {
   const socketIoServer = socketIoApp.listen(socketPort, () => {
-    console.log(`Socket.IO server running on port ${socketPort}`);
+    console.log(`Socket.IO server running on http://localhost:${socketPort}`);
   });
 
   const server = app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
+    console.log(`Server running on http://localhost:${port}`);
   });
 
   process.on('unhandledRejection', (err: Error) => {

@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { CustomJwtPayload } from '@tradeblitz/common-types';
 import '@tradeblitz/common-types';
+import { AuthTypes } from '@tradeblitz/common-types';
 
 import AppError from './AppError';
 import catchAsync from './catchAsync';
@@ -33,7 +34,10 @@ const sendErrorProd = (err: AppError, res: Response) => {
 const handleDuplicateErrorDB = (err: any) => {
   if (err.meta.target.includes('email'))
     return new AppError('Account with this email already exists', 400);
+  return new AppError('Resource with these values already exists', 400);
 };
+
+const handleNotFoundError = () => new AppError(`Resource not found`, 404);
 
 const handleJWTError = () =>
   new AppError(`Invalid token. Please log in again!`, 401);
@@ -54,13 +58,14 @@ const errorHandler = (
     sendErrorDev(err, res);
   } else {
     if (err.code === 'P2002') err = handleDuplicateErrorDB(err);
+    if (err.code === 'P2025') err = handleNotFoundError();
     if (err.name === 'JsonWebTokenError') err = handleJWTError();
     if (err.name === 'TokenExpiredError') err = handleExpiredTokenError();
     sendErrorProd(err, res);
   }
 };
 
-export const protect = catchAsync(
+const protect = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const token = req.cookies?.jwt;
 
@@ -80,4 +85,16 @@ export const protect = catchAsync(
   }
 );
 
-export { errorHandler };
+const restrictTo = (...roles: AuthTypes.Role[]) => {
+  return catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    if (!roles.includes(req.user!.role)) {
+      return next(
+        new AppError('You do not have permission to perform this action', 403)
+      );
+    }
+
+    next();
+  });
+};
+
+export { errorHandler, protect, restrictTo };

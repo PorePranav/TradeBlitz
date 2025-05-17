@@ -21,6 +21,17 @@ services:
     ports:
       - '5433:5432'
 
+  registry-db:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: registry
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - registry-db-data:/var/lib/postgresql/data
+    ports:
+      - '5437:5432'
+
   rabbitmq:
     image: rabbitmq:3-management
     ports:
@@ -44,5 +55,6 @@ services:
 volumes:
   auth-db-data:
   orders-db-data:
+  registry-db-data:
   rabbitmq-data:
   redis-data:

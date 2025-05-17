@@ -7,7 +7,7 @@ import { RabbitMQClient } from '@tradeblitz/rabbitmq';
 import { AppError, catchAsync } from '@tradeblitz/common-utils';
 
 import prisma from '../utils/prisma';
-import { User } from '../types/prismaTypes';
+import { Role, User } from '../types/prismaTypes';
 import { CustomJwtPayload } from '@tradeblitz/common-types';
 
 const rabbitClient = new RabbitMQClient({ url: process.env.RABBITMQ_URL! });
@@ -58,7 +58,7 @@ export const signupController = catchAsync(
         name,
         email,
         password: hashedPassword,
-        role: 'USER',
+        role: Role.USER,
       },
     });
 
@@ -142,7 +142,7 @@ export const createAdminUser = catchAsync(
         name,
         email,
         password: hashedPassword,
-        role: 'ADMIN',
+        role: Role.ADMIN,
       },
     });
 

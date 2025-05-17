@@ -9,7 +9,7 @@ datasource db {
 }
 
 model Order {
-  id              String      @id @default(uuid())
+  id              String      @id @default(cuid())
   userId          String
   securityId      String
   type            OrderType
