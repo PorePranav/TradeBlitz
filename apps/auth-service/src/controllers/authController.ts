@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 import '@tradeblitz/common-types';
-import { RabbitMQClient } from '@tradeblitz/rabbitmq';
+import { ExchangeType, RabbitMQClient } from '@tradeblitz/rabbitmq';
 import { AppError, catchAsync } from '@tradeblitz/common-utils';
 
 import prisma from '../utils/prisma';
@@ -62,9 +62,16 @@ export const signupController = catchAsync(
       },
     });
 
-    await producer.sendToQueue(
-      'auth-service.user-created.notification-service.queue',
-      { email: newUser.email, name: newUser.name }
+    await producer.publish(
+      {
+        email: newUser.email,
+        name: newUser.name,
+        userId: newUser.id,
+      },
+      {
+        exchangeName: 'auth-service.user-created.fanout',
+        exchangeType: ExchangeType.FANOUT,
+      }
     );
 
     createSendToken(newUser, 201, res);

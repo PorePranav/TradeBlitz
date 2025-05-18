@@ -5,10 +5,7 @@ import { catchAsync } from '@tradeblitz/common-utils';
 
 import prisma from '../utils/prisma';
 import { OrderStatus, OrderType } from '../types/prismaTypes';
-import {
-  checkUserBalance,
-  verifySecurityExists,
-} from '../utils/orderValidators';
+import { checkUserBalance, verifySecurityExists } from '../utils/orderUtils';
 
 const rabbitClient = new RabbitMQClient({ url: process.env.RABBITMQ_URL! });
 const producer = rabbitClient.getProducer();
@@ -27,6 +24,7 @@ export const createOrder = catchAsync(
         type,
         side,
         quantity,
+        remainingQuantity: quantity,
         price: type === OrderType.LIMIT ? price : undefined,
         status: OrderStatus.OPEN,
       },

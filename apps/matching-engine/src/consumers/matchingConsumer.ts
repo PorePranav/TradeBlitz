@@ -44,12 +44,9 @@ export async function matchingConsumer() {
         }
       } catch (err) {
         if (err instanceof OrderRejectedError) {
-          const orderBook = getMarketDepth(order.securityId, 5);
-          console.log('Order rejected: ', order.id);
-          console.log(orderBook);
           await producer.sendToQueue(
             'matching-engine.order-rejected.order-service.queue',
-            { orderId: order.id, reason: err.message }
+            { orderId: order.id, rejectionReason: err.message }
           );
         } else {
           console.error('Error processing order:', err);
