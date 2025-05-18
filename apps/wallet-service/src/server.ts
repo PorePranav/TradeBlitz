@@ -9,11 +9,11 @@ process.on('uncaughtException', (err: Error) => {
   process.exit(1);
 });
 
-const port = process.env.PORT || 3001;
+const port = process.env.PORT || 3003;
 
 if (process.env.NODE_ENV !== 'production') {
   const server = app.listen(port, () => {
-    console.log(`Order service is running on http://localhost:${port}`);
+    console.log(`Wallet service is running on http://localhost:${port}`);
   });
 
   process.on('unhandledRejection', (err: Error) => {

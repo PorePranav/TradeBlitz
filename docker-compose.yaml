@@ -21,6 +21,17 @@ services:
     ports:
       - '5433:5432'
 
+  wallet-db:
+    image: postgres:latest
+    environment:
+      - POSTGRES_DB=wallet
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - wallet-db-data:/var/lib/postgresql/data
+    ports:
+      - '5435:5432'
+
   registry-db:
     image: postgres:latest
     environment:
@@ -56,5 +67,6 @@ volumes:
   auth-db-data:
   orders-db-data:
   registry-db-data:
+  wallet-db-data:
   rabbitmq-data:
   redis-data:

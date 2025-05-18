@@ -1,8 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import axios, { AxiosError } from 'axios';
 
 import { RabbitMQClient } from '@tradeblitz/rabbitmq';
-import { AppError, catchAsync } from '@tradeblitz/common-utils';
+import { catchAsync } from '@tradeblitz/common-utils';
 
 import prisma from '../utils/prisma';
 import { OrderStatus, OrderType } from '../types/prismaTypes';

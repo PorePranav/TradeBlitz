@@ -9,7 +9,7 @@ process.on('uncaughtException', (err: Error) => {
   process.exit(1);
 });
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3005;
 
 if (process.env.NODE_ENV !== 'production') {
   const server = app.listen(port, () => {
