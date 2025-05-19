@@ -396,7 +396,7 @@ describe('Matching Engine', () => {
     processOrder(buyOrder);
 
     expect(getLastTradedPrice('AAPL')).toBe(150);
-    expect(getLastTradedPrice('MSFT')).toBeNull();
+    expect(getLastTradedPrice('MSFT')).toBe(0);
   });
 
   test('should return market depth correctly', () => {
@@ -470,7 +470,7 @@ describe('Matching Engine', () => {
   });
 
   test('should handle non-existent security', () => {
-    expect(getLastTradedPrice('NONEXISTENT')).toBeNull();
+    expect(getLastTradedPrice('NONEXISTENT')).toBe(0);
     expect(getBestBuyOrders('NONEXISTENT')).toEqual([]);
     expect(getBestSellOrders('NONEXISTENT')).toEqual([]);
     expect(getMarketDepth('NONEXISTENT')).toEqual({

@@ -15,6 +15,7 @@ export const getBalance = catchAsync(
       status: 'success',
       data: {
         balance: wallet.balance,
+        onHold: wallet.onHold,
       },
     });
   }
@@ -63,6 +64,31 @@ export const withdrawMoney = catchAsync(
     res.status(200).json({
       status: 'success',
       data: updatedWallet,
+    });
+  }
+);
+
+export const checkAndHold = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { amount, userId } = req.body;
+
+    const fetchedWallet = await prisma.wallet.findUnique({ where: { userId } });
+
+    if (!fetchedWallet) return next(new AppError('Wallet not found', 404));
+    if (fetchedWallet.balance < amount)
+      return next(new AppError('Insufficient funds', 400));
+
+    await prisma.wallet.update({
+      where: { userId },
+      data: { onHold: { increment: amount }, balance: { decrement: amount } },
+    });
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        onHold: true,
+        amountOnHold: amount,
+      },
     });
   }
 );

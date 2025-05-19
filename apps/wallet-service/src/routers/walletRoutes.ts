@@ -1,11 +1,13 @@
-import { protect, validateRequest } from '@tradeblitz/common-utils';
+import { protect, restrictTo, validateRequest } from '@tradeblitz/common-utils';
 import { Router } from 'express';
 import { performTransactionSchema } from '../validators/walletValidations';
 import {
+  checkAndHold,
   depositMoney,
   getBalance,
   withdrawMoney,
 } from '../controllers/walletControllers';
+import { AuthTypes } from '@tradeblitz/common-types';
 
 const router = Router();
 
@@ -21,5 +23,8 @@ router.post(
   validateRequest(performTransactionSchema),
   withdrawMoney
 );
+
+router.use(restrictTo(AuthTypes.Role.ADMIN));
+router.post('/holdFunds', checkAndHold);
 
 export default router;

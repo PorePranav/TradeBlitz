@@ -29,4 +29,39 @@ export async function walletConsumer() {
       consumer.ack(msg);
     }
   );
+
+  await consumer.consume(
+    {
+      queueName: 'order-service.order-executed.wallet-service.queue',
+      prefetch: 5,
+      autoAck: false,
+    },
+    async (msg: ConsumeMessage | null) => {
+      if (!msg) return;
+
+      const {
+        buyUserId,
+        sellUserId,
+        tradedAmount,
+      }: { buyUserId: string; sellUserId: string; tradedAmount: number } =
+        JSON.parse(msg.content.toString());
+
+      try {
+        await prisma.$transaction([
+          prisma.wallet.update({
+            where: { userId: buyUserId },
+            data: { balance: { decrement: tradedAmount } },
+          }),
+          prisma.wallet.update({
+            where: { userId: sellUserId },
+            data: { balance: { increment: tradedAmount } },
+          }),
+        ]);
+
+        consumer.ack(msg);
+      } catch (err) {
+        console.error('Error processing wallet transaction:', err);
+      }
+    }
+  );
 }

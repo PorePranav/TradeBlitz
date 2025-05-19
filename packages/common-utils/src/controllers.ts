@@ -73,6 +73,10 @@ const protect = catchAsync(
     if (authHeader?.startsWith('Bearer ')) {
       token = authHeader.split(' ')[1];
       if (token === process.env.SERVICE_AUTH_TOKEN) {
+        req.user = {
+          id: process.env.SERVICE_USER_ID!,
+          role: AuthTypes.Role.ADMIN,
+        };
         return next();
       }
     }

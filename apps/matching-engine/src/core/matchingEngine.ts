@@ -1,4 +1,4 @@
-import { ProcessableOrder, Trade } from '@tradeblitz/common-types';
+import { OrderTypes, ProcessableOrder, Trade } from '@tradeblitz/common-types';
 import { OrderBook } from './OrderBook';
 import { OrderRejectedError } from '../errors/OrderRejectedError';
 
@@ -29,6 +29,19 @@ export function processOrder(order: ProcessableOrder): Trade[] {
   return orderBook.addOrder(order);
 }
 
+export function hasLiquidity(
+  securityId: string,
+  side: OrderTypes.Side
+): boolean {
+  const orderBook = orderBooks.get(securityId);
+
+  if (!orderBook) return false;
+
+  return side === OrderTypes.Side.BUY
+    ? !(orderBook?.getBestSellOrders(1).length === 0)
+    : !(orderBook?.getBestBuyOrders(1).length === 0);
+}
+
 export function cancelOrder(orderId: string, securityId: string): boolean {
   const orderBook = orderBooks.get(securityId);
   return orderBook ? orderBook.cancelOrder(orderId) : false;
@@ -38,9 +51,9 @@ export function resetOrderBooks(): void {
   orderBooks.clear();
 }
 
-export function getLastTradedPrice(securityId: string): number | null {
+export function getLastTradedPrice(securityId: string): number {
   const orderBook = orderBooks.get(securityId);
-  return orderBook ? orderBook.getLastTradedPrice() : null;
+  return orderBook ? orderBook.getLastTradedPrice() : 0;
 }
 
 export function getBestBuyOrders(securityId: string, n: number = 5) {

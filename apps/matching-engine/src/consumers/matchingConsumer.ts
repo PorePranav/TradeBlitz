@@ -46,7 +46,12 @@ export async function matchingConsumer() {
         if (err instanceof OrderRejectedError) {
           await producer.sendToQueue(
             'matching-engine.order-rejected.order-service.queue',
-            { orderId: order.id, rejectionReason: err.message }
+            {
+              orderId: order.id,
+              rejectionReason: err.message,
+              side: order.side,
+              quantity: order.originalQuantity,
+            }
           );
         } else {
           console.error('Error processing order:', err);
