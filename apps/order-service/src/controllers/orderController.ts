@@ -1,64 +1,200 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction, RequestHandler } from 'express';
+import axios from 'axios';
 
 import { RabbitMQClient } from '@tradeblitz/rabbitmq';
-import { catchAsync } from '@tradeblitz/common-utils';
+import { AppError, catchAsync } from '@tradeblitz/common-utils';
 
 import prisma from '../utils/prisma';
 import { OrderStatus, OrderType } from '../types/prismaTypes';
-import { checkConditions, verifySecurityExists } from '../utils/orderUtils';
 
 const rabbitClient = new RabbitMQClient({ url: process.env.RABBITMQ_URL! });
 const producer = rabbitClient.getProducer();
 
-export const createOrder = catchAsync(
+export const validateSecurityId = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { securityId } = req.body;
+
+    const isValidSecurity = await axios.get(
+      `${process.env.REGISTRY_SERVICE_URL}/${securityId}`,
+      {
+        headers: { Authorization: `Bearer ${process.env.SERVICE_AUTH_TOKEN}` },
+        timeout: 3000,
+      }
+    );
+
+    if (isValidSecurity.data.status !== 'success') {
+      return next(new AppError('Invalid security ID', 404));
+    }
+
+    next();
+  }
+);
+
+export const checkLiquidity = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { securityId, side } = req.body;
+
+    const liquidity = await axios.post(
+      `${process.env.MATCHING_ENGINE_URL}/checkLiquidity`,
+      { securityId, side },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.SERVICE_AUTH_TOKEN}`,
+        },
+        timeout: 3000,
+      }
+    );
+
+    const { hasLiquidity } = liquidity.data.data;
+
+    if (!hasLiquidity)
+      return next(
+        new AppError('No liquidity available currently, try LIMIT order', 400)
+      );
+
+    next();
+  }
+);
+
+export const orderHandler = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { type, side } = req.body;
+
+    const orderKey =
+      `${type}_${side}`.toUpperCase() as keyof typeof orderRegistry;
+    const orderFlow = orderRegistry[orderKey];
+
+    if (!orderFlow)
+      return next(new AppError('Invalid order type or side', 400));
+
+    const allHandlers = [...orderFlow.middlewares, orderFlow.handler];
+    let idx = 0;
+
+    const runNext = (err?: any) => {
+      if (err) return next(err);
+      const current = allHandlers[idx++];
+      if (!current) return next();
+      try {
+        current(req, res, runNext);
+      } catch (error) {
+        runNext(error);
+      }
+    };
+
+    runNext();
+  }
+);
+
+export const getEstimateAndHoldFunds = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { securityId, side, quantity } = req.body;
+
+    const bestEstimate = await axios.post(
+      `${process.env.MATCHING_ENGINE_URL}/getBestPrice`,
+      { securityId, side, quantity },
+      {
+        headers: { Authorization: `Bearer ${process.env.SERVICE_AUTH_TOKEN}` },
+        timeout: 3000,
+      }
+    );
+
+    const { totalAmount } = bestEstimate.data.data;
+
+    try {
+      const holdFunds = await axios.post(
+        `${process.env.WALLET_SERVICE_URL}/holdFunds`,
+        { userId: req.user!.id, amount: totalAmount },
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.SERVICE_AUTH_TOKEN}`,
+          },
+          timeout: 3000,
+        }
+      );
+
+      if (holdFunds.data.status !== 'success') {
+        return next(
+          new AppError(
+            'Insufficient funds, please add funds to your wallet',
+            400
+          )
+        );
+      }
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        return next(new AppError(err.response?.data.message, 400));
+      }
+    }
+
+    next();
+  }
+);
+
+export const handleMarketBuy = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { securityId, type, side, quantity, price } = req.body;
 
-    // await verifySecurityExists(securityId);
-    await checkConditions(
-      securityId,
-      req.user!.id,
-      type,
-      side,
-      quantity,
-      price
-    );
+    const newOrder = await prisma.order.create({
+      data: {
+        userId: req.user!.id,
+        securityId,
+        type,
+        side,
+        quantity,
+        remainingQuantity: quantity,
+        price: type === OrderType.LIMIT ? price : undefined,
+        status: OrderStatus.OPEN,
+      },
+    });
 
-    // const newOrder = await prisma.order.create({
-    //   data: {
-    //     userId: req.user!.id,
-    //     securityId,
-    //     type,
-    //     side,
-    //     quantity,
-    //     remainingQuantity: quantity,
-    //     price: type === OrderType.LIMIT ? price : undefined,
-    //     status: OrderStatus.OPEN,
-    //   },
-    // });
-
-    // producer.sendToQueue('order-service.order-created.matching-engine.queue', {
-    //   id: newOrder.id,
-    //   securityId: newOrder.securityId,
-    //   type: newOrder.type,
-    //   side: newOrder.side,
-    //   originalQuantity: newOrder.quantity,
-    //   filledQuantity: 0,
-    //   remainingQuantity: newOrder.quantity,
-    //   price: newOrder.price,
-    //   status: newOrder.status,
-    //   createdAt: newOrder.createdAt,
-    // });
-
-    // res.status(201).json({
-    //   status: 'success',
-    //   data: {
-    //     order: newOrder,
-    //   },
-    // });
+    producer.sendToQueue('order-service.order-created.matching-engine.queue', {
+      id: newOrder.id,
+      securityId: newOrder.securityId,
+      type: newOrder.type,
+      side: newOrder.side,
+      originalQuantity: newOrder.quantity,
+      filledQuantity: 0,
+      remainingQuantity: newOrder.quantity,
+      price: newOrder.price,
+      status: newOrder.status,
+      createdAt: newOrder.createdAt,
+    });
 
     res.status(201).json({
       status: 'success',
+      data: {
+        order: newOrder,
+      },
     });
+
+    // res.status(201).json({
+    //   status: 'success',
+    // });
   }
 );
+
+type OrderKey = `${'MARKET' | 'LIMIT'}_${'BUY' | 'SELL'}`;
+
+type OrderFlow = {
+  middlewares: RequestHandler[];
+  handler: RequestHandler;
+};
+
+export const orderRegistry: Record<OrderKey, OrderFlow> = {
+  MARKET_BUY: {
+    middlewares: [validateSecurityId, checkLiquidity, getEstimateAndHoldFunds],
+    handler: handleMarketBuy,
+  },
+  MARKET_SELL: {
+    middlewares: [validateSecurityId, checkLiquidity],
+    handler: handleMarketBuy,
+  },
+  LIMIT_BUY: {
+    middlewares: [validateSecurityId],
+    handler: handleMarketBuy,
+  },
+  LIMIT_SELL: {
+    middlewares: [validateSecurityId],
+    handler: handleMarketBuy,
+  },
+};
