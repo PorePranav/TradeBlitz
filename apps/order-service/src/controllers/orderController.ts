@@ -130,6 +130,10 @@ export const getEstimateAndHoldFunds = catchAsync(
   }
 );
 
+export const holdSecurities = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {}
+);
+
 export const handleMarketBuy = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { securityId, type, side, quantity, price } = req.body;

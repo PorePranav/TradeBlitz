@@ -42,6 +42,17 @@ services:
       - registry-db-data:/var/lib/postgresql/data
     ports:
       - '5437:5432'
+  
+  portfolio-db:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: portfolio 
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - portfolio-db-data:/var/lib/postgresql/data
+    ports:
+      - '5436:5432'
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -68,5 +79,6 @@ volumes:
   orders-db-data:
   registry-db-data:
   wallet-db-data:
+  portfolio-db-data:
   rabbitmq-data:
   redis-data:
