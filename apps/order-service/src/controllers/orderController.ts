@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction, RequestHandler } from 'express';
-import axios from 'axios';
+import axios, { AxiosResponse } from 'axios';
 
 import { RabbitMQClient } from '@tradeblitz/rabbitmq';
 import { AppError, catchAsync } from '@tradeblitz/common-utils';
@@ -87,18 +87,31 @@ export const orderHandler = catchAsync(
 
 export const getEstimateAndHoldFunds = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { securityId, side, quantity } = req.body;
+    const { securityId, side, quantity, type, price } = req.body;
 
-    const bestEstimate = await axios.post(
-      `${process.env.MATCHING_ENGINE_URL}/getBestPrice`,
-      { securityId, side, quantity },
-      {
-        headers: { Authorization: `Bearer ${process.env.SERVICE_AUTH_TOKEN}` },
-        timeout: 3000,
+    let totalAmount: number = 0;
+
+    try {
+      if (type === OrderType.MARKET) {
+        const bestEstimate = await axios.post(
+          `${process.env.MATCHING_ENGINE_URL}/getBestPrice`,
+          { securityId, side, quantity },
+          {
+            headers: {
+              Authorization: `Bearer ${process.env.SERVICE_AUTH_TOKEN}`,
+            },
+            timeout: 3000,
+          }
+        );
+
+        totalAmount = bestEstimate.data.data.totalAmount;
+      } else {
+        totalAmount = quantity * price;
       }
-    );
-
-    const { totalAmount } = bestEstimate.data.data;
+    } catch (err) {
+      if (axios.isAxiosError(err))
+        return next(new AppError(err.response?.data.message, 400));
+    }
 
     try {
       const holdFunds = await axios.post(
@@ -131,10 +144,37 @@ export const getEstimateAndHoldFunds = catchAsync(
 );
 
 export const holdSecurities = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {}
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { quantity, securityId } = req.body;
+
+    try {
+      const holdSecurities = await axios.post(
+        `${process.env.PORTFOLIO_SERVICE_URL}/holdSecurities`,
+        {
+          userId: req.user!.id,
+          securityId,
+          quantity,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.SERVICE_AUTH_TOKEN}`,
+          },
+          timeout: 3000,
+        }
+      );
+
+      if (holdSecurities.data.status !== 'success')
+        return next(new AppError('You do not have enough quantity', 400));
+    } catch (err) {
+      if (axios.isAxiosError(err))
+        return next(new AppError(err.response?.data.message, 400));
+    }
+
+    next();
+  }
 );
 
-export const handleMarketBuy = catchAsync(
+export const createOrder = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { securityId, type, side, quantity, price } = req.body;
 
@@ -170,10 +210,6 @@ export const handleMarketBuy = catchAsync(
         order: newOrder,
       },
     });
-
-    // res.status(201).json({
-    //   status: 'success',
-    // });
   }
 );
 
@@ -187,18 +223,18 @@ type OrderFlow = {
 export const orderRegistry: Record<OrderKey, OrderFlow> = {
   MARKET_BUY: {
     middlewares: [validateSecurityId, checkLiquidity, getEstimateAndHoldFunds],
-    handler: handleMarketBuy,
+    handler: createOrder,
   },
   MARKET_SELL: {
-    middlewares: [validateSecurityId, checkLiquidity],
-    handler: handleMarketBuy,
+    middlewares: [validateSecurityId, checkLiquidity, holdSecurities],
+    handler: createOrder,
   },
   LIMIT_BUY: {
     middlewares: [validateSecurityId],
-    handler: handleMarketBuy,
+    handler: createOrder,
   },
   LIMIT_SELL: {
     middlewares: [validateSecurityId],
-    handler: handleMarketBuy,
+    handler: createOrder,
   },
 };

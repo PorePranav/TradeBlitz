@@ -72,7 +72,9 @@ export const checkAndHold = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { amount, userId } = req.body;
 
-    const fetchedWallet = await prisma.wallet.findUnique({ where: { userId } });
+    const fetchedWallet = await prisma.wallet.findUnique({
+      where: { userId },
+    });
 
     if (!fetchedWallet) return next(new AppError('Wallet not found', 404));
     if (fetchedWallet.balance < amount)
