@@ -41,7 +41,6 @@ export const processTrades = async (trades: Trade[]) => {
       }
     );
 
-    //TODO: Add consumer in portfolio service to handle this message
     await producer.sendToQueue(
       'order-service.order-executed.portfolio-service.queue',
       {
@@ -49,6 +48,7 @@ export const processTrades = async (trades: Trade[]) => {
         sellUserId: processedSellOrder.userId,
         securityId: processedBuyOrder.securityId,
         quantity: trade.quantity,
+        price: trade.price,
         buyOrderId: processedBuyOrder.id,
         sellOrderId: processedSellOrder.id,
         executedAt: trade.executedAt,

@@ -4,6 +4,7 @@ import { ExchangeType, RabbitMQClient } from '@tradeblitz/rabbitmq';
 import prisma from '../utils/prisma';
 import { OrderStatus } from '../types/prismaTypes';
 import { processTrades } from '../utils/orderUtils';
+import { Trade } from '@tradeblitz/common-types';
 
 const rabbitClient = new RabbitMQClient({ url: process.env.RABBITMQ_URL! });
 const consumer = rabbitClient.getConsumer();
@@ -19,8 +20,8 @@ export async function orderConsumer() {
     async (msg: ConsumeMessage | null) => {
       if (!msg) return;
 
-      const { trades } = JSON.parse(msg.content.toString());
-      processTrades(trades);
+      const trades = JSON.parse(msg.content.toString()) as Trade[];
+      await processTrades(trades);
 
       consumer.ack(msg);
     }
@@ -54,8 +55,16 @@ export async function orderConsumer() {
             amount: quantity,
           }
         );
+      } else {
+        await producer.sendToQueue(
+          'order-service.release-hold.portfolio-service.queue',
+          {
+            userId: rejectedOrder.userId,
+            securityId: rejectedOrder.securityId,
+            quantity,
+          }
+        );
       }
-      //TODO: If sell order then add logic here and consumer in portfolio service to release the hold on security
 
       consumer.ack(msg);
     }

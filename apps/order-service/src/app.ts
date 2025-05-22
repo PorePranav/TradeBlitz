@@ -5,8 +5,12 @@ import cookieParser from 'cookie-parser';
 
 import { AppError, globalErrorHandler } from '@tradeblitz/common-utils';
 import ordersRouter from './routers/orderRoutes';
+import { orderConsumer } from './consumers/orderConsumers';
 
 const app = express();
+
+orderConsumer();
+
 app.use(cookieParser());
 app.use(cors());
 app.use(express.json());

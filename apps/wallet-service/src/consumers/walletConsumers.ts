@@ -64,4 +64,33 @@ export async function walletConsumer() {
       }
     }
   );
+
+  await consumer.consume(
+    {
+      queueName: 'order-service.release-hold.portfolio-service.queue',
+      prefetch: 5,
+      autoAck: false,
+    },
+    async (msg: ConsumeMessage | null) => {
+      if (!msg) return;
+
+      const { userId, amount }: { userId: string; amount: number } = JSON.parse(
+        msg.content.toString()
+      );
+
+      try {
+        await prisma.wallet.update({
+          where: { userId },
+          data: {
+            onHold: { decrement: amount },
+            balance: { increment: amount },
+          },
+        });
+
+        consumer.ack(msg);
+      } catch (err) {
+        console.error('Error releasing hold on wallet:', err);
+      }
+    }
+  );
 }

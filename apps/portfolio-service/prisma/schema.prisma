@@ -21,7 +21,6 @@ model Holding {
   id          String    @id @default(cuid())
   portfolioId String
   portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
-  symbol      String
   securityId  String
   quantity    Int
   onHold      Int       @default(0)
@@ -36,7 +35,6 @@ model Trade {
   id          String    @id @default(cuid())
   portfolioId String
   portfolio   Portfolio @relation(fields: [portfolioId], references: [id])
-  symbol      String
   side        Side
   quantity    Int
   price       Float

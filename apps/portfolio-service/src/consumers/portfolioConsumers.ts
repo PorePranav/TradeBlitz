@@ -2,6 +2,7 @@ import { ConsumeMessage } from 'amqplib';
 import { ExchangeType, RabbitMQClient } from '@tradeblitz/rabbitmq';
 import prisma from '../utils/prisma';
 import { calculateNewAvgPrice } from '../utils/portfolioUtils';
+import { OrderTypes } from '@tradeblitz/common-types';
 
 const rabbitClient = new RabbitMQClient({ url: process.env.RABBITMQ_URL! });
 const consumer = rabbitClient.getConsumer();
@@ -32,7 +33,7 @@ export async function portfolioConsumer() {
 
   await consumer.consume(
     {
-      queueName: 'order-serice.order-executed.portfolio-service.queue',
+      queueName: 'order-service.order-executed.portfolio-service.queue',
       prefetch: 5,
       autoAck: false,
     },
@@ -44,7 +45,6 @@ export async function portfolioConsumer() {
           buyUserId,
           sellUserId,
           securityId,
-          symbol,
           quantity,
           price,
           buyOrderId,
@@ -86,7 +86,6 @@ export async function portfolioConsumer() {
           create: {
             portfolioId: buyerPortfolio.id,
             securityId,
-            symbol,
             quantity,
             avgPrice: price,
           },
@@ -107,8 +106,7 @@ export async function portfolioConsumer() {
         await prisma.trade.create({
           data: {
             portfolioId: buyerPortfolio.id,
-            symbol,
-            side: 'BUY',
+            side: OrderTypes.Side.BUY,
             quantity,
             price,
             executedAt,
@@ -119,8 +117,7 @@ export async function portfolioConsumer() {
         await prisma.trade.create({
           data: {
             portfolioId: sellerPortfolio.id,
-            symbol,
-            side: 'SELL',
+            side: OrderTypes.Side.SELL,
             quantity,
             price,
             executedAt,
@@ -132,6 +129,37 @@ export async function portfolioConsumer() {
       } catch (err) {
         console.error('Error processing order execution:', err);
       }
+    }
+  );
+
+  await consumer.consume(
+    {
+      queueName: 'order-service.release-hold.portfolio-service.queue',
+      prefetch: 5,
+      autoAck: false,
+    },
+    async (msg) => {
+      if (!msg) return;
+
+      const { userId, securityId, quantity } = JSON.parse(
+        msg.content.toString()
+      );
+
+      const fetchedPortfolio = await prisma.portfolio.findUnique({
+        where: { userId },
+      });
+
+      await prisma.holding.update({
+        where: {
+          portfolioId_securityId: {
+            portfolioId: fetchedPortfolio!.id,
+            securityId,
+          },
+        },
+        data: { onHold: { decrement: quantity } },
+      });
+
+      consumer.ack(msg);
     }
   );
 }
