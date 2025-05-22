@@ -50,7 +50,7 @@ export async function walletConsumer() {
         await prisma.$transaction([
           prisma.wallet.update({
             where: { userId: buyUserId },
-            data: { balance: { decrement: tradedAmount } },
+            data: { onHold: { decrement: tradedAmount } },
           }),
           prisma.wallet.update({
             where: { userId: sellUserId },

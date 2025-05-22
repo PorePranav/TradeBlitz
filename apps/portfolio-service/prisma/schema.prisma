@@ -28,6 +28,8 @@ model Holding {
   avgPrice    Float
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
+  @@unique([portfolioId, securityId])
 }
 
 model Trade {

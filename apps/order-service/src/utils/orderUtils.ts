@@ -2,7 +2,7 @@ import { Trade } from '@tradeblitz/common-types';
 import { RabbitMQClient } from '@tradeblitz/rabbitmq';
 
 import prisma from './prisma';
-import { Order, OrderStatus, OrderType, Side } from '../types/prismaTypes';
+import { Order, OrderStatus } from '../types/prismaTypes';
 
 const rabbitClient = new RabbitMQClient({
   url: process.env.RABBITMQ_URL!,
@@ -49,6 +49,9 @@ export const processTrades = async (trades: Trade[]) => {
         sellUserId: processedSellOrder.userId,
         securityId: processedBuyOrder.securityId,
         quantity: trade.quantity,
+        buyOrderId: processedBuyOrder.id,
+        sellOrderId: processedSellOrder.id,
+        executedAt: trade.executedAt,
       }
     );
   }

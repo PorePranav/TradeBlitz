@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction, RequestHandler } from 'express';
-import axios, { AxiosResponse } from 'axios';
+import axios from 'axios';
 
 import { RabbitMQClient } from '@tradeblitz/rabbitmq';
 import { AppError, catchAsync } from '@tradeblitz/common-utils';
@@ -85,11 +85,11 @@ export const orderHandler = catchAsync(
   }
 );
 
-export const getEstimateAndHoldFunds = catchAsync(
+export const estimateAndHoldFunds = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { securityId, side, quantity, type, price } = req.body;
 
-    let totalAmount: number = 0;
+    let totalAmount: number = side === OrderType.LIMIT ? quantity * price : 0;
 
     try {
       if (type === OrderType.MARKET) {
@@ -222,7 +222,7 @@ type OrderFlow = {
 
 export const orderRegistry: Record<OrderKey, OrderFlow> = {
   MARKET_BUY: {
-    middlewares: [validateSecurityId, checkLiquidity, getEstimateAndHoldFunds],
+    middlewares: [validateSecurityId, checkLiquidity, estimateAndHoldFunds],
     handler: createOrder,
   },
   MARKET_SELL: {
@@ -230,11 +230,11 @@ export const orderRegistry: Record<OrderKey, OrderFlow> = {
     handler: createOrder,
   },
   LIMIT_BUY: {
-    middlewares: [validateSecurityId],
+    middlewares: [validateSecurityId, estimateAndHoldFunds],
     handler: createOrder,
   },
   LIMIT_SELL: {
-    middlewares: [validateSecurityId],
+    middlewares: [validateSecurityId, holdSecurities],
     handler: createOrder,
   },
 };
